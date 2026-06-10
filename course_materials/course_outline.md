@@ -1,6 +1,6 @@
 # AI-Assisted Python Programming: Course Outline
 
-This document provides bullet points on the content of episodes.
+This document provides brief descriptions of the content of episodes.
 
 1. Course introduction and old school software engineering
    1. Course learning objectives.
@@ -34,7 +34,7 @@ This document provides bullet points on the content of episodes.
    2. Execute each step of the plan.
 7. Introduction to subagents and skills
 8. Writing subagents and skills
-9.  Integration subagents into your workflow
+9. Integrate subagents into your workflow
 10. Introduction to MCP tools
 11. Integrating tools into workflow
     1. playright
