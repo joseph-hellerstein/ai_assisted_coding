@@ -5,7 +5,7 @@ have substantive experience with Python programming and ``github`` with some exp
 
 * They have written python applications in excess of 1,000 lines of code.
 * They have written applications with at least two Python modules.
-* They have at least one ``github`` repository in which they are the primary contributor.
+* They have at least one ``github`` repository in which they are the primary contributor. They know how to: (a) create a new repository; (b) clone an existing repository; (c) add files to the client repo; (d) create a commit; (e) push a commit.
 * They have developed an application in ``VSCode``.
 * They have used a large language model to write code.
 * They have written basic HTML tags.

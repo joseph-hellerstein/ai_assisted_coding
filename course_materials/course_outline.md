@@ -1,6 +1,6 @@
 # AI-Assisted Python Programming: Course Outline
 
-This document provides brief descriptions of the content of episodes.
+This document provides brief descriptions of the content of lectures.
 
 1. Course introduction and old school software engineering
    1. Course learning objectives.
@@ -39,32 +39,58 @@ This document provides brief descriptions of the content of episodes.
 
 5. Assisted small feature implementation
    1. Scope: function/method or small refactor
-   2. Write function doc
-   3. AI implementation
-   4. Review and iterate
-   5. AI writes tests
-   6. Review tests
+   2. Use case 1: Complete a partial implementation
+      1. Implementation may have comments in sections and errors in others.
+   3. Use case 2: AI creates from scratch
+      1. Write function doc
+      2. AI implementation
+      3. Review and iterate
+      4. AI writes tests
+      5. Review tests
 
-6. Assists for large feature: Part 1
+6. Cost and effectiveness of AI assists
+   1. Key metrics: tokens and context
+      1. What they are
+      2. How to monitor
+   2. Charging algorithms for LLMs
+   3. Speed of response with larger context
+   4. Best practices
+      1. Summarize and start anew
+      2. Concise prompts
+      3. Use local LLM
+
+7. Assists for large feature: Part 1
    1. Scope: Requires at least one module
    2. Write specification
    3. Review for: completeness, ambiguities, consistency
 
-7. Assists for large features: Part 2
+8. Assists for large features: Part 2
    1. Write a plan and review
    2. Execute each step of the plan.
 
-8. Introduction to skills.
+9. Direct prompting vs. program  assisted action.
 
-9. Writing skills
+10. Running AI models locally
+    1. LM studio
+       1. Overview
+       2. Downloading models
+       3. Running a local model
+    2. Connecting VSCode with LM Studio
+    3. Comparing local vs. remote models
 
-10. Integrate subagents into your workflow
+11. Introduction to skills.
+    1. What is a skill
+    2. Why skills are useful for AI assisted coding
+    3. First skills example
+    4. Second skills example
 
-11. Direct prompting vs. program  assisted action.
+12. Guidelines for writing skills
 
-12. Introduction to MCP tools
+13. Integrate subagents into your workflow
 
-13. Integrating tools into workflow
+14. Introduction to MCP tools
+
+15. Integrating tools into workflow
     1. playright
 
-14. Writing your own tool
+16. Writing your own tool

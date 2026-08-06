@@ -1,0 +1,5 @@
+{
+    "python.analysis.ignoreMissingStubs": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.defaultInterpreterPath": "./aac/bin/python"
+}
