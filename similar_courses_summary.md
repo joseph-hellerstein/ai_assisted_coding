@@ -278,3 +278,28 @@ These aren't university courses, but several match the outline's *specific* topi
 6. **Local-model hosting (LM Studio) is essentially unaddressed academically.** The only material found on this topic, in either round, was vendor/Udemy-style tutorials, not university or established online-platform courses. This may be a genuine differentiator for your outline's Module 12.
 
 7. **A note on sourcing:** Several entries in the original version of this document (round 1) contained fabricated or mismatched course numbers, titles, and URLs (notably for MIT, Harvard, CMU, ETH Zurich, Georgia Tech, and the University of Toronto). All round-1 entries were re-verified against live sources before round 2 began, and all round-2 entries were verified by direct page fetch (noted individually) rather than search-snippet trust alone.
+
+| # | Course | Institution / Platform | Format | Practical Match to Outline |
+|---|--------|------------------------|--------|------------------------------|
+| 4 | 15-113: Effective Coding with AI | CMU | Semester course, project-based | **Strong** — closest university peer |
+| 16 | Claude Code: Software Engineering with GenAI Agents | Vanderbilt / Coursera | Online, 6 modules | **Strong** — closest overall match (CLAUDE.md, subagents, worktrees) |
+| 17 | Claude Code: A Highly Agentic Coding Assistant | DeepLearning.AI (with Anthropic) | Free short course, ~2 hrs | **Strong** — direct demo of outline §3, §16–17 |
+| 19 | Claude Code 101 | Anthropic Academy | Free, self-paced | **Strong** — near 1:1 with outline Module 3 |
+| 20 | Claude Code in Action | Anthropic Academy | Free, 15 short lessons | **Moderate–Strong** — matches §6, §9 |
+| 21 | Introduction to MCP | Anthropic Academy / Coursera | Free / paid, hands-on | **Strong** — matches Modules 16 & 18 |
+| 18 | Agent Skills with Anthropic | DeepLearning.AI | Free short course | **Moderate–Strong** — matches Modules 13–14 |
+| 6 | COMP_SCI 397: Applied AI for Software Development | Northwestern | Semester course | **Moderate** — right audience, syllabus depth unconfirmed |
+| 7 | CSE490A2 / AI-Assisted Software Development | U. Washington | Semester course (pilot) | **Moderate** — good fit, but not currently running (next offering Winter 2027) |
+| 5 | CS 59300ASE: AI-Assisted Software Engineering | Purdue | Grad seminar | **Weak–Moderate** — research/paper format, not build-focused |
+| 9 | CS329A: Self-Improving AI Agents | Stanford | Grad seminar | **Weak** — agent research, not practitioner coding |
+| 8 | CS 194/294-196: Agentic AI (MOOC) | UC Berkeley | Free MOOC, guest lectures | **Weak** — theory/research-weighted, code is one of many topics |
+| 3 | 11-667: Large Language Models | CMU | Grad course | **Weak** — LLM theory, not AI-assisted coding practice |
+| 1 | CS25: Transformers United V6 | Stanford | Seminar | **Weak** — transformer research seminar |
+| 2 | CS285: Deep Reinforcement Learning | UC Berkeley | Grad course | **Weak** — unrelated to AI-assisted coding |
+| 11 | LLMs for Design and Applications | Harvard | Course | **Weak** — hardware/acceleration focus |
+| 12 | Large Language Models | ETH Zurich | Course | **Weak** — theoretical LM foundations |
+| 13 | CS 4650/7650: NLP | Georgia Tech | Course | **Weak** — general NLP, not AI-assisted coding |
+| 14 | CSC413/2516: Neural Networks and Deep Learning | U. Toronto | Course | **Weak** — general deep learning |
+| 15 | Computing (AI & ML) MEng | Imperial College London | Degree track | **Weak** — broad AI/ML degree, not coding-practice focused |
+
+**Reading the table:** the strong matches (top block) are almost all vendor/Anthropic courses that teach the exact tools your outline references (Claude Code, CLAUDE.md, MCP, skills, subagents) but in short, non-academic formats. CMU 15-113 is the only university course combining that practitioner content with a full-semester, graded, project-based structure similar to what you're building. Everything below the moderate band was retained mainly for completeness/context rather than as a close peer.

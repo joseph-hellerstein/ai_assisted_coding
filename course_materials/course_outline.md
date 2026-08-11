@@ -38,7 +38,7 @@ This document provides brief descriptions of the content of lectures.
       2. The sidebar chat interface
       3. Running /init
    3. Chat interface
-   4. AI review and iterate implementation
+   4. AI review and iterating on implementation
    5. Prompting skills
 
 4. AI assisted code review
@@ -76,11 +76,22 @@ This document provides brief descriptions of the content of lectures.
    1. Write a plan and review
    2. Execute each step of the plan.
 
-10. Direct prompting vs. program  assisted action.
+10. Sustainability - software that lives after its creator is gone
 
-11. Working with multiple harnesses
+   1. Challenges with sustainabilit
+      1. "bit rot" - changes in dependencies
+	  2. bugs discovered as use cases evolve
+      3. new features/requirements
 
-12. Running AI models locally
+   2. Requirements for help from AI
+      1. Living specification
+      2. Consistent organization of project folders and files
+
+11. Direct prompting vs. program  assisted action.
+
+12. Working with multiple harnesses
+
+13. Running AI models locally
     1. LM studio
        1. Overview
        2. Downloading models
@@ -88,19 +99,19 @@ This document provides brief descriptions of the content of lectures.
     2. Connecting VSCode with LM Studio
     3. Comparing local vs. remote models
 
-13. Introduction to skills.
+14. Introduction to skills.
     1. What is a skill
     2. Why skills are useful for AI assisted coding
     3. First skills example
     4. Second skills example
 
-14. Guidelines for writing skills
+15. Guidelines for writing skills
 
-15. Integrate subagents into your workflow
+16. Integrate subagents into your workflow
 
-16. Introduction to MCP tools
+17. Introduction to MCP tools
 
-17. Integrating tools into workflow
+18. Integrating tools into workflow
     1. playright
 
-18. Writing your own tool
+19. Writing your own tool
