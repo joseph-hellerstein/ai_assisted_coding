@@ -1,0 +1,7 @@
+jupyterlab
+matplotlib
+nose2
+numpy
+pandas
+dash>=2.0.0
+plotly

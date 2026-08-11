@@ -8,6 +8,7 @@ This document provides brief descriptions of the content of lectures.
       1. History
       2. Key concepts in neural networks
       3. Capabilities and limitations of LLMs
+      4. AI ethics
    3. Old school software engineering
       1. Agile programming: specify, implement/test, evaluate
       2. Documentation: overall spec, module, function/method
@@ -24,9 +25,14 @@ This document provides brief descriptions of the content of lectures.
    4. HTML
    5. ``callbacks``
 
-3. AI-Assisted Code Review
-
-   1. Implement landing page for the application
+3. Basics of AI-Assists
+   1. Architecture and terminology
+      1. AI model
+      2. Tokens
+      3. Context
+      4. Harness
+      5. Agents, skills (and where *.md files live)
+      6. Tools
    2. Claude on-boarding
       1. Installing the Anthropic extension in VSCode
       2. The sidebar chat interface
@@ -35,9 +41,11 @@ This document provides brief descriptions of the content of lectures.
    4. AI review and iterate implementation
    5. Prompting skills
 
-4. AI-Assisted implementation of unit tests
+4. AI assisted code review
 
-5. Assisted small feature implementation
+5. AI-Assisted implementation of unit tests
+
+6. Assisted small feature implementation
    1. Scope: function/method or small refactor
    2. Use case 1: Complete a partial implementation
       1. Implementation may have comments in sections and errors in others.
@@ -48,7 +56,7 @@ This document provides brief descriptions of the content of lectures.
       4. AI writes tests
       5. Review tests
 
-6. Cost and effectiveness of AI assists
+7. Cost and effectiveness of AI assists
    1. Key metrics: tokens and context
       1. What they are
       2. How to monitor
@@ -59,18 +67,20 @@ This document provides brief descriptions of the content of lectures.
       2. Concise prompts
       3. Use local LLM
 
-7. Assists for large feature: Part 1
+8. Assists for large feature: Part 1
    1. Scope: Requires at least one module
    2. Write specification
    3. Review for: completeness, ambiguities, consistency
 
-8. Assists for large features: Part 2
+9. Assists for large features: Part 2
    1. Write a plan and review
    2. Execute each step of the plan.
 
-9. Direct prompting vs. program  assisted action.
+10. Direct prompting vs. program  assisted action.
 
-10. Running AI models locally
+11. Working with multiple harnesses
+
+12. Running AI models locally
     1. LM studio
        1. Overview
        2. Downloading models
@@ -78,19 +88,19 @@ This document provides brief descriptions of the content of lectures.
     2. Connecting VSCode with LM Studio
     3. Comparing local vs. remote models
 
-11. Introduction to skills.
+13. Introduction to skills.
     1. What is a skill
     2. Why skills are useful for AI assisted coding
     3. First skills example
     4. Second skills example
 
-12. Guidelines for writing skills
+14. Guidelines for writing skills
 
-13. Integrate subagents into your workflow
+15. Integrate subagents into your workflow
 
-14. Introduction to MCP tools
+16. Introduction to MCP tools
 
-15. Integrating tools into workflow
+17. Integrating tools into workflow
     1. playright
 
-16. Writing your own tool
+18. Writing your own tool
