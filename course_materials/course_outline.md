@@ -13,7 +13,11 @@ This document provides brief descriptions of the content of lectures.
       1. Agile programming: specify, implement/test, evaluate
       2. Documentation: overall spec, module, function/method
       3. Design
-      4. Tests: what is a test; writing tests; coverage; not flakey; pytest
+      4. Tests
+         1. what is a test
+         2. writing tests
+         3. Bad tests: flakey, brittle
+         4. Coverage
 
 2. Running example
    1. Description of the survey manager
@@ -25,27 +29,12 @@ This document provides brief descriptions of the content of lectures.
    4. HTML
    5. ``callbacks``
 
-3. Basics of AI-Assists
-   1. Architecture and terminology
-      1. AI model
-      2. Tokens
-      3. Context
-      4. Harness
-      5. Agents, skills (and where *.md files live)
-      6. Tools
-   2. Claude on-boarding
-      1. Installing the Anthropic extension in VSCode
-      2. The sidebar chat interface
-      3. Running /init
-   3. Chat interface
-   4. AI review and iterating on implementation
-   5. Prompting skills
+3. AI assisted code review
+   1. Brief review of LLM basics
 
-4. AI assisted code review
+4. AI-Assisted implementation of unit tests
 
-5. AI-Assisted implementation of unit tests
-
-6. Assisted small feature implementation
+5. Assisted small feature implementation
    1. Scope: function/method or small refactor
    2. Use case 1: Complete a partial implementation
       1. Implementation may have comments in sections and errors in others.
@@ -56,62 +45,19 @@ This document provides brief descriptions of the content of lectures.
       4. AI writes tests
       5. Review tests
 
-7. Cost and effectiveness of AI assists
-   1. Key metrics: tokens and context
-      1. What they are
-      2. How to monitor
-   2. Charging algorithms for LLMs
-   3. Speed of response with larger context
-   4. Best practices
-      1. Summarize and start anew
-      2. Concise prompts
-      3. Use local LLM
-
-8. Assists for large feature: Part 1
+6. Assists for large feature: Part 1
    1. Scope: Requires at least one module
    2. Write specification
    3. Review for: completeness, ambiguities, consistency
 
-9. Assists for large features: Part 2
+7. Assists for large features: Part 2
    1. Write a plan and review
    2. Execute each step of the plan.
+   3. Uses of specifications: documentation, refactoring, sustainability
 
-10. Sustainability - software that lives after its creator is gone
+8. Adding features to a foreign repository
 
-   1. Challenges with sustainabilit
-      1. "bit rot" - changes in dependencies
-	  2. bugs discovered as use cases evolve
-      3. new features/requirements
-
-   2. Requirements for help from AI
-      1. Living specification
-      2. Consistent organization of project folders and files
-
-11. Direct prompting vs. program  assisted action.
-
-12. Working with multiple harnesses
-
-13. Running AI models locally
-    1. LM studio
-       1. Overview
-       2. Downloading models
-       3. Running a local model
-    2. Connecting VSCode with LM Studio
-    3. Comparing local vs. remote models
-
-14. Introduction to skills.
-    1. What is a skill
-    2. Why skills are useful for AI assisted coding
-    3. First skills example
-    4. Second skills example
-
-15. Guidelines for writing skills
-
-16. Integrate subagents into your workflow
-
-17. Introduction to MCP tools
-
-18. Integrating tools into workflow
-    1. playright
-
-19. Writing your own tool
+9. Using the specification
+   1. Documentation
+   2. Refactoring
+   3. Sustainability
