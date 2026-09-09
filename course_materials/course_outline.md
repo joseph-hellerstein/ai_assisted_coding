@@ -29,12 +29,13 @@ This document provides brief descriptions of the content of lectures.
    4. HTML
    5. ``callbacks``
 
-3. AI assisted code review
-   1. Brief review of LLM basics
+3. Brief review of LLM basics
 
-4. AI-Assisted implementation of unit tests
+4. AI assisted code review
 
-5. Assisted small feature implementation
+5. AI-Assisted implementation of unit tests
+
+6. Assisted small feature implementation
    1. Scope: function/method or small refactor
    2. Use case 1: Complete a partial implementation
       1. Implementation may have comments in sections and errors in others.
@@ -45,19 +46,19 @@ This document provides brief descriptions of the content of lectures.
       4. AI writes tests
       5. Review tests
 
-6. Assists for large feature: Part 1
+7. Assists for large feature: Part 1
    1. Scope: Requires at least one module
    2. Write specification
    3. Review for: completeness, ambiguities, consistency
 
-7. Assists for large features: Part 2
+8. Assists for large features: Part 2
    1. Write a plan and review
    2. Execute each step of the plan.
    3. Uses of specifications: documentation, refactoring, sustainability
 
-8. Adding features to a foreign repository
+9.  Adding features to a foreign repository
 
-9. Using the specification
+10. Using the specification
    1. Documentation
    2. Refactoring
    3. Sustainability

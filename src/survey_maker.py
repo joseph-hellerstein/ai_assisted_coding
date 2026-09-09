@@ -162,18 +162,49 @@ def survey_maker_layout():
     return html.Div([
         html.H2("Survey Maker", style={"textAlign": "center"}),
 
-        # Existing surveys dropdown
+        # Existing surveys dropdown + Create New Survey button
         html.Div([
-            html.Label("Select an existing survey to edit:"),
-            dcc.Dropdown(
-                id="maker-survey-select",
-                options=[],
-                value=None,
-                clearable=True,
-                placeholder="Choose a survey...",
-                style={"marginBottom": "15px"},
-            ),
-        ], style={"maxWidth": "600px", "margin": "0 auto 20px auto"}),
+            html.Div([
+                html.Label("Select an existing survey to edit:"),
+                dcc.Dropdown(
+                    id="maker-survey-select",
+                    options=[],
+                    value=None,
+                    clearable=True,
+                    placeholder="Choose a survey...",
+                    style={"marginBottom": "15px"},
+                ),
+            ], style={
+                "maxWidth": "420px",
+                "display": "inline-block",
+                "verticalAlign": "top",
+            }),
+            html.Div([
+                html.Button(
+                    "\U0001f4dd Create New Survey",
+                    id="maker-create-new",
+                    n_clicks=0,
+                    style={
+                        "padding": "10px 20px",
+                        "backgroundColor": "#ff9800",
+                        "color": "white",
+                        "border": "none",
+                        "borderRadius": "4px",
+                        "cursor": "pointer",
+                        "fontSize": "16px",
+                        "display": "block",
+                    },
+                ),
+            ], style={
+                "maxWidth": "200px",
+                "display": "inline-block",
+                "verticalAlign": "top",
+                "marginLeft": "20px",
+            }),
+        ], style={
+            "maxWidth": "640px",
+            "margin": "0 auto 20px auto",
+        }),
 
         # Survey metadata
         html.Div([

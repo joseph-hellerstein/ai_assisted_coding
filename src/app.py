@@ -78,6 +78,7 @@ def refresh_survey_list(tabs_value):
     Output("maker-survey-data", "children"),
     Input("maker-survey-select", "value"),
     Input("maker-add-question", "n_clicks"),
+    Input("maker-create-new", "n_clicks"),
     State("maker-title", "value"),
     State("maker-description", "value"),
     State("maker-survey-data", "children"),
@@ -88,6 +89,7 @@ def handle_survey_load_or_add(survey_id, add_n, title, description, existing_dat
 
     Uses callback_context to determine which input triggered the callback.
     """
+    import pdb; pdb.set_trace()
     ctx = dash.callback_context
     if not ctx.triggered:
         return no_update, no_update, no_update, no_update
@@ -123,8 +125,13 @@ def handle_survey_load_or_add(survey_id, add_n, title, description, existing_dat
         data.append(new_q)
         return title or "", description or "", editors, json.dumps(data)
 
+    elif trigger_id == "maker-create-new":
+        editors = [survey_maker.render_question_editor(None, 0)]
+        blank_q = Question(id=generate_id("q_"), type="text", text="", required=True).to_dict()
+        return None, "", "", editors, json.dumps([blank_q])
+
     # Default: no change
-    return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
 
 
 @callback(
