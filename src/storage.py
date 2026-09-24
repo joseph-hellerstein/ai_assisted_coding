@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from models import Survey, Response
+from models import Survey, Response  # type: ignore
 
 
 # Base directory relative to this file

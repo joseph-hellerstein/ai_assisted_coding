@@ -1,7 +1,7 @@
 """Unit tests for the pure form-assembly helpers used by the Survey Maker
 and Survey Taker callbacks (src/form_logic.py)."""
 
-from form_logic import (
+from form_logic import (  # type: ignore
     lines_to_list,
     list_to_lines,
     type_visibility,

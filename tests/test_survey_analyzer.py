@@ -1,7 +1,7 @@
 """Tests for chart generation in src/survey_analyzer.py."""
 
-from models import Question, Response
-from survey_analyzer import _generate_question_chart
+from models import Question, Response # type: ignore
+from survey_analyzer import _generate_question_chart  # type: ignore
 
 
 def _bar_values_by_label(fig):

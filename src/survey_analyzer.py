@@ -8,8 +8,6 @@ import plotly.graph_objects as go  # type: ignore
 import pandas as pd  # type: ignore
 from collections import Counter  # type: ignore
 
-from storage import list_surveys, load_survey, load_responses
-
 
 def survey_analyzer_layout():
     """Return the SurveyAnalyzer page layout."""

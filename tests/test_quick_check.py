@@ -21,7 +21,7 @@ for mod in ["models", "storage", "survey_maker", "survey_taker", "survey_analyze
         tb.print_exc()
 
 print("\n=== Checking callbacks registered in app module ===")
-import app as a
+import app as a  # type: ignore
 
 callbacks = getattr(a.app, "callbacks_list", [])
 print(f"  Total callbacks: {len(callbacks)}")

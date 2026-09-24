@@ -1,12 +1,12 @@
 """SurveyMaker component - Build surveys by defining questions and answer types."""
 from __future__ import annotations
 
-import constants as cn
+import constants as cn  # type: ignore
 
 from dash import dcc, html  # type: ignore
 
-from models import Question, generate_id
-from form_logic import list_to_lines, type_visibility, section_style
+from models import Question  #  type: ignore
+from form_logic import list_to_lines, type_visibility, section_style  # type: ignore
 
 
 QUESTION_TYPE_LABELS = {

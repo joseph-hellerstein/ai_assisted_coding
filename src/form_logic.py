@@ -6,7 +6,7 @@ tested directly, without going through a running Dash server.
 """
 from __future__ import annotations
 
-from models import Question
+from models import Question  # type: ignore
 
 
 def lines_to_list(text: str | None) -> list[str]:

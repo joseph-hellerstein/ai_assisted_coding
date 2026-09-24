@@ -6,8 +6,8 @@ always rendered (visibility toggled, never rebuilt), and options / matrix
 rows / matrix columns are single "one item per line" textareas.
 """
 
-from models import Question
-from survey_maker import render_question_editor, survey_maker_layout
+from models import Question  # type: ignore
+from survey_maker import render_question_editor, survey_maker_layout  # type: ignore
 
 
 def _collect_by_id(component, out=None):

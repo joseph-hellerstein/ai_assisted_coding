@@ -6,8 +6,8 @@ an ALL-pattern State, regardless of survey/question count. Matrix questions
 render one input per row, keyed by the composite qid "{question_id}::{row}".
 """
 
-from models import Question
-from survey_taker import _render_question_input
+from models import Question # type: ignore
+from survey_taker import _render_question_input  # type: ignore
 
 
 def _collect_ids(component, out=None):

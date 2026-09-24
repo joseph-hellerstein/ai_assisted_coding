@@ -8,7 +8,8 @@ covered instead by the Playwright acceptance test, since callback_context
 is empty outside of a real request.
 """
 
-import app as app_module
+import app as app_module  # type: ignore
+from typing import cast
 
 
 def test_save_survey_callback_captures_live_text_typed_into_the_form():
@@ -169,7 +170,7 @@ def test_confirm_delete_survey_opens_dialog_with_survey_title_when_selected():
     displayed, message, status = app_module.confirm_delete_survey(1, "srv_1")
 
     assert displayed is True
-    assert "My Survey" in message
+    assert ("My Survey" in cast(str, message))
 
 
 def test_confirm_delete_survey_shows_warning_when_none_selected():

@@ -11,13 +11,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 from dash import Dash, dcc, html, Input, Output, State, callback, no_update, ALL, MATCH
 import dash
 
-import survey_maker
-import survey_taker
-import survey_analyzer
-import constants as cn
-from models import Survey, Response, generate_id
-from storage import save_survey, load_survey, list_surveys, save_response, load_responses, delete_survey
-from form_logic import (
+import survey_maker  # type: ignore
+import survey_taker  # type: ignore
+import survey_analyzer  # type: ignore
+import constants as cn  # type: ignore
+from models import Survey, Response, generate_id  # type: ignore
+from storage import save_survey, load_survey, list_surveys, save_response, load_responses, delete_survey  # type: ignore
+from form_logic import (  # type: ignore
     type_visibility,
     section_style,
     extract_clicked_qid,
