@@ -3,20 +3,28 @@
 import os
 import sys
 from pathlib import Path
-import json
 from datetime import datetime
 
 # Ensure src directory is in path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from dash import Dash, dcc, html, Input, Output, State, callback, no_update, ALL
+from dash import Dash, dcc, html, Input, Output, State, callback, no_update, ALL, MATCH
 import dash
 
 import survey_maker
 import survey_taker
 import survey_analyzer
-from models import Question, Survey, Response, generate_id
-from storage import save_survey, load_survey, list_surveys, save_response, load_responses
+import constants as cn
+from models import Survey, Response, generate_id
+from storage import save_survey, load_survey, list_surveys, save_response, load_responses, delete_survey
+from form_logic import (
+    type_visibility,
+    section_style,
+    extract_clicked_qid,
+    assemble_questions_from_state,
+    remove_question_by_qid,
+    build_response_answers_from_state,
+)
 
 
 # ===== Create the app instance at module level so callbacks can register =====
@@ -52,116 +60,145 @@ app.layout = html.Div([
         "maxWidth": "1200px",
         "margin": "0 auto",
     }),
-
-    # Hidden container for storing question data as JSON in textContent
-    html.Div(id="maker-survey-data", children=json.dumps([]), style={"display": "none"}),
 ], style={"backgroundColor": "#ffffff"})
 
 
 # ===== Survey Maker Callbacks =====
 
 @callback(
-    Output("maker-survey-select", "options"),
-    Input("main-tabs", "value"),
+    Output(cn.L_MAKER_SURVEY_SELECT, "options"),
+    Input(cn.L_MAIN_TABS, cn.L_VALUE),
     prevent_initial_call=True,
 )
 def refresh_survey_list(tabs_value):
     """Refresh the survey dropdown when switching tabs."""
     surveys = list_surveys()
-    return [{"label": s["title"], "value": s["id"]} for s in surveys]
+    return [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys]
 
 
 @callback(
-    Output("maker-title", "value"),
-    Output("maker-description", "value"),
-    Output("maker-questions-container", "children"),
-    Output("maker-survey-data", "children"),
-    Input("maker-survey-select", "value"),
-    Input("maker-add-question", "n_clicks"),
-    Input("maker-create-new", "n_clicks"),
-    State("maker-title", "value"),
-    State("maker-description", "value"),
-    State("maker-survey-data", "children"),
+    Output(cn.L_MAKER_TITLE, cn.L_VALUE),
+    Output(cn.L_MAKER_DESCRIPTION, cn.L_VALUE),
+    Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN),
+    Input(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
+    Input(cn.L_MAKER_CREATE_NEW, cn.L_N_CLICKS),
     prevent_initial_call=True,
 )
-def handle_survey_load_or_add(survey_id, add_n, title, description, existing_data):
-    """Handle both loading an existing survey and adding a new question.
-
-    Uses callback_context to determine which input triggered the callback.
-    """
-    import pdb; pdb.set_trace()
+def load_or_new_survey(survey_id, create_new_n):
+    """Load an existing survey into the editor, or reset it for a new one."""
     ctx = dash.callback_context
     if not ctx.triggered:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update
 
     trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
-    # Loading an existing survey from dropdown
-    if trigger_id == "maker-survey-select" and survey_id:
+    if trigger_id == cn.L_MAKER_SURVEY_SELECT:
+        if not survey_id:
+            return "", "", []
         survey = load_survey(survey_id)
         if not survey:
-            return "", "", [], json.dumps([])
+            return "", "", []
+        editors = [survey_maker.render_question_editor(q, q.id) for q in survey.questions]
+        return survey.title, survey.description, editors
 
-        editors = [survey_maker.render_question_editor(q, i) for i, q in enumerate(survey.questions)]
-        q_data = [q.to_dict() for q in survey.questions]
-        return survey.title, survey.description, editors, json.dumps(q_data)
+    if trigger_id == cn.L_MAKER_CREATE_NEW:
+        editors = [survey_maker.render_question_editor(None, generate_id("q_"))]
+        return "", "", editors
 
-    # Adding a new question via button click
-    elif trigger_id == "maker-add-question":
-        # Parse survey data - may be a JSON string from Store children
-        raw = existing_data if existing_data else "[]"
-        try:
-            if isinstance(raw, str):
-                data = json.loads(raw)
-            elif isinstance(raw, list):
-                data = raw
-            else:
-                data = []
-        except (ValueError, TypeError):
-            data = []
-        n = len(data) + 1
-        editors = [survey_maker.render_question_editor(None, i) for i in range(n)]
-        new_q = Question(id=generate_id("q_"), type="text", text="", required=True).to_dict()
-        data.append(new_q)
-        return title or "", description or "", editors, json.dumps(data)
-
-    elif trigger_id == "maker-create-new":
-        editors = [survey_maker.render_question_editor(None, 0)]
-        blank_q = Question(id=generate_id("q_"), type="text", text="", required=True).to_dict()
-        return None, "", "", editors, json.dumps([blank_q])
-
-    # Default: no change
-        return no_update, no_update, no_update, no_update
+    return no_update, no_update, no_update
 
 
 @callback(
-    Output("maker-status", "children"),
-    Input("maker-save-survey", "n_clicks"),
-    State("maker-title", "value"),
-    State("maker-description", "value"),
-    State("maker-survey-data", "children"),
+    Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN, allow_duplicate=True),
+    Input(cn.L_MAKER_ADD_QUESTION, cn.L_N_CLICKS),
+    State(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN),
     prevent_initial_call=True,
 )
-def save_survey_callback(n_clicks, title, description, survey_data):
-    """Save the current survey."""
+def add_question(n_clicks, current_children):
+    """Append one new blank question editor, leaving existing ones untouched."""
+    new_editor = survey_maker.render_question_editor(None, generate_id("q_"))
+    return (current_children or []) + [new_editor]
+
+
+@callback(
+    Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN, allow_duplicate=True),
+    Input({"type": "delete-q", "qid": ALL}, cn.L_N_CLICKS),
+    State(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN),
+    prevent_initial_call=True,
+)
+def delete_question(n_clicks_list, current_children):
+    """Remove the question editor whose Delete button was actually clicked."""
+    ctx = dash.callback_context
+    triggered_value = ctx.triggered[0]["value"] if ctx.triggered else None
+    qid = extract_clicked_qid(ctx.triggered_id, triggered_value)
+    if qid is None:
+        return no_update
+    return remove_question_by_qid(current_children, qid)
+
+
+@callback(
+    Output({"type": "q-options-wrap", "qid": MATCH}, "style"),
+    Output({"type": "q-scale-wrap", "qid": MATCH}, "style"),
+    Output({"type": "q-matrix-wrap", "qid": MATCH}, "style"),
+    Input({"type": "q-type", "qid": MATCH}, cn.L_VALUE),
+)
+def toggle_type_fields(type_value):
+    """Show only the editor section relevant to the selected question type.
+
+    Sections are never rebuilt, only shown/hidden, so switching a
+    question's type can never discard already-entered options/scale/matrix
+    data in the other sections.
+    """
+    visibility = type_visibility(type_value)
+    return (
+        section_style(visibility["options"]),
+        section_style(visibility["scale"]),
+        section_style(visibility["matrix"]),
+    )
+
+
+@callback(
+    Output(cn.L_MAKER_STATUS, cn.L_CHILDREN),
+    Output(cn.L_MAKER_SURVEY_SELECT, "options", allow_duplicate=True),
+    Input(cn.L_MAKER_SAVE_SURVEY, "n_clicks"),
+    State(cn.L_MAKER_TITLE, cn.L_VALUE),
+    State(cn.L_MAKER_DESCRIPTION, cn.L_VALUE),
+    State(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
+    State({"type": "q-type", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-type", "qid": ALL}, "id"),
+    State({"type": "q-text", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-required", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-options", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-scale-min", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-scale-max", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-scale-label-min", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-scale-label-max", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-matrix-rows", "qid": ALL}, cn.L_VALUE),
+    State({"type": "q-matrix-cols", "qid": ALL}, cn.L_VALUE),
+    prevent_initial_call=True,
+)
+def save_survey_callback(n_clicks, title, description, selected_survey_id,
+                          types, type_ids, texts, requireds, options_texts,
+                          scale_mins, scale_maxs, scale_label_mins, scale_label_maxs,
+                          matrix_rows_texts, matrix_cols_texts):
+    """Save the current survey using the live values of the rendered form fields."""
     if not title:
-        return html.Span("⚠️ Please enter a survey title.", style={"color": "orange"})
+        return html.Span("⚠️ Please enter a survey title.", style={"color": "orange"}), no_update
 
-    if not survey_data:
-        return html.Span("⚠️ No questions to save.", style={"color": "orange"})
+    qids = [d["qid"] for d in type_ids]
+    if not qids:
+        return html.Span("⚠️ No questions to save.", style={"color": "orange"}), no_update
 
-    # Parse question data from store
-    questions = [Question.from_dict(qd) for qd in survey_data]
+    questions = assemble_questions_from_state(
+        qids, types, texts, requireds, options_texts,
+        scale_mins, scale_maxs, scale_label_mins, scale_label_maxs,
+        matrix_rows_texts, matrix_cols_texts,
+    )
 
-    # Determine if we're editing an existing survey
-    select_state = dash.callback_context.states[0].get("value") if dash.callback_context.states else None
-    survey_id = ""
-    if select_state:
-        existing = load_survey(select_state)
-        if existing:
-            survey_id = select_state
-
-    if not survey_id:
+    # Determine if we're editing an existing survey (selected in dropdown)
+    if selected_survey_id and load_survey(selected_survey_id):
+        survey_id = selected_survey_id
+    else:
         survey_id = generate_id("srv_")
 
     survey = Survey(
@@ -172,29 +209,76 @@ def save_survey_callback(n_clicks, title, description, survey_data):
     )
 
     save_survey(survey)
-    return html.Span(f"✅ Survey '{title}' saved successfully!", style={"color": "green"})
+    surveys = list_surveys()
+    return (
+        html.Span(f"✅ Survey '{title}' saved successfully!", style={"color": "green"}),
+        [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys],
+    )
+
+
+@callback(
+    Output(cn.L_MAKER_DELETE_CONFIRM, "displayed"),
+    Output(cn.L_MAKER_DELETE_CONFIRM, "message"),
+    Output(cn.L_MAKER_STATUS, cn.L_CHILDREN, allow_duplicate=True),
+    Input(cn.L_MAKER_DELETE_SURVEY, cn.L_N_CLICKS),
+    State(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
+    prevent_initial_call=True,
+)
+def confirm_delete_survey(n_clicks, survey_id):
+    """Open the confirmation dialog for deleting the selected survey."""
+    if not survey_id:
+        return False, no_update, html.Span("⚠️ Select a survey to delete first.", style={"color": "orange"})
+
+    survey = load_survey(survey_id)
+    title = survey.title if survey else survey_id
+    return True, f"Delete survey '{title}'? This cannot be undone.", no_update
+
+
+@callback(
+    Output(cn.L_MAKER_STATUS, cn.L_CHILDREN, allow_duplicate=True),
+    Output(cn.L_MAKER_SURVEY_SELECT, "options", allow_duplicate=True),
+    Output(cn.L_MAKER_TITLE, cn.L_VALUE, allow_duplicate=True),
+    Output(cn.L_MAKER_DESCRIPTION, cn.L_VALUE, allow_duplicate=True),
+    Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN, allow_duplicate=True),
+    Output(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE, allow_duplicate=True),
+    Input(cn.L_MAKER_DELETE_CONFIRM, "submit_n_clicks"),
+    State(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
+    prevent_initial_call=True,
+)
+def perform_delete_survey(submit_n_clicks, survey_id):
+    """Delete the selected survey (and its responses) once the user confirms."""
+    delete_survey(survey_id)
+    surveys = list_surveys()
+    return (
+        html.Span("✅ Survey deleted.", style={"color": "green"}),
+        [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys],
+        "",
+        "",
+        [],
+        None,
+    )
 
 
 # ===== Survey Taker Callbacks =====
 
 @callback(
     Output("taker-survey-select", "options"),
-    Input("main-tabs", "value"),
+    Input("main-tabs", cn.L_VALUE),
     prevent_initial_call=True,
 )
 def refresh_taker_list(tabs_value):
     """Refresh the survey dropdown when switching tabs."""
     surveys = list_surveys()
-    return [{"label": s["title"], "value": s["id"]} for s in surveys]
+    return [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys]
 
 
 @callback(
-    Output("taker-survey-form", "children"),
-    Input("taker-survey-select", "value"),
+    Output("taker-survey-form", cn.L_CHILDREN),
+    Input("taker-survey-select", cn.L_VALUE),
     prevent_initial_call=True,
 )
 def show_survey(survey_id):
-    """Show the survey form when a survey is selected."""
+    """Render the form for the selected survey."""
     if not survey_id:
         return []
 
@@ -206,36 +290,27 @@ def show_survey(survey_id):
 
 
 @callback(
-    Output("taker-status", "children"),
-    Input("taker-submit", "n_clicks"),
-    State("taker-survey-select", "value"),
+    Output(cn.L_TAKER_STATUS, cn.L_CHILDREN),
+    Input(cn.L_TAKER_SUBMIT, "n_clicks"),
+    State("taker-survey-select", cn.L_VALUE),
+    State({"type": "answer", "qid": ALL}, cn.L_VALUE),
+    State({"type": "answer", "qid": ALL}, "id"),
     prevent_initial_call=True,
 )
-def submit_survey(n_clicks, survey_id):
-    """Handle survey submission."""
+def submit_survey_response(n_clicks, survey_id, values, ids):
+    """Save the submitted answers as a Response.
+
+    Registered once, statically, at import time (unlike the previous
+    implementation, which tried to register this callback at request time
+    inside `show_survey` — Dash never actually wires up a callback
+    registered that way, so submissions were silently dropped).
+    """
     if not survey_id:
-        return html.Span("⚠️ Please select a survey.", style={"color": "orange"})
+        return html.Span("⚠️ No survey selected.", style={"color": "orange"})
 
-    survey = load_survey(survey_id)
-    if not survey:
-        return html.Span("⚠️ Survey not found.", style={"color": "red"})
+    qids = [d["qid"] for d in ids]
+    answers = build_response_answers_from_state(qids, values)
 
-    # Collect answers from callback context states
-    answers = {}
-    for q in survey.questions:
-        input_id = f"answer_{q.id}_value"
-        answer_state = None
-        for state in dash.callback_context.states:
-            if isinstance(state, dict):
-                sid = state.get("prop_id", "")
-                if sid == input_id + ".value":
-                    answer_state = state.get("value")
-                    break
-
-        if answer_state is not None:
-            answers[q.id] = answer_state
-
-    # Create and save response
     response = Response(
         id=generate_id("resp_"),
         survey_id=survey_id,
@@ -264,21 +339,21 @@ def show_thank_you(n_clicks):
 
 @callback(
     Output("analyzer-survey-select", "options"),
-    Input("main-tabs", "value"),
+    Input("main-tabs", cn.L_VALUE),
     prevent_initial_call=True,
 )
 def refresh_analyzer_list(tabs_value):
     """Refresh the survey dropdown when switching tabs."""
     surveys = list_surveys()
-    return [{"label": s["title"], "value": s["id"]} for s in surveys]
+    return [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys]
 
 
 @callback(
-    Output("analyzer-response-count", "children"),
-    Output("analyzer-charts", "children"),
+    Output("analyzer-response-count", cn.L_CHILDREN),
+    Output("analyzer-charts", cn.L_CHILDREN),
     Output("analyzer-data-table", "data"),
     Output("analyzer-data-table", "columns"),
-    Input("analyzer-survey-select", "value"),
+    Input("analyzer-survey-select", cn.L_VALUE),
     prevent_initial_call=True,
 )
 def analyze_survey(survey_id):
@@ -335,4 +410,4 @@ def analyze_survey(survey_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    app.run(debug=True, host="0.0.0.0", port=8051)

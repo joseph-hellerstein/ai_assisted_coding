@@ -55,14 +55,23 @@ def render_survey_taker(survey):
     ])
 
 
-def _render_question_input(question, qid):
-    """Render the appropriate input component based on question type."""
-    prefix = f"answer_{qid}_"
+def _answer_id(qid):
+    return {"type": "answer", "qid": qid}
 
+
+def _render_question_input(question, qid):
+    """Render the appropriate input component based on question type.
+
+    Every answer input (including one per matrix row) uses the
+    pattern-matching id {"type": "answer", "qid": ...} so a single,
+    statically-registered submit callback can collect all answers for any
+    survey via an ALL-pattern State. A matrix row's qid is the composite
+    "{question_id}::{row_label}".
+    """
     if question.type == "yesno":
         return html.Div([
             dcc.RadioItems(
-                id=prefix + "value",
+                id=_answer_id(qid),
                 options=[
                     {"label": "Yes", "value": "Yes"},
                     {"label": "No", "value": "No"},
@@ -74,7 +83,7 @@ def _render_question_input(question, qid):
     elif question.type == "checkbox" or question.type == "multiselect":
         return html.Div([
             dcc.Checklist(
-                id=prefix + "value",
+                id=_answer_id(qid),
                 options=[{"label": opt, "value": opt} for opt in question.options],
                 inline=True,
             ),
@@ -94,7 +103,7 @@ def _render_question_input(question, qid):
 
         return html.Div([
             dcc.RadioItems(
-                id=prefix + "value",
+                id=_answer_id(qid),
                 options=labels,
                 inline=True,
             ),
@@ -105,7 +114,7 @@ def _render_question_input(question, qid):
         max_val = question.scale_max
         return html.Div([
             dcc.Slider(
-                id=prefix + "value",
+                id=_answer_id(qid),
                 min=min_val,
                 max=max_val,
                 step=1,
@@ -117,7 +126,7 @@ def _render_question_input(question, qid):
     elif question.type == "ranking":
         return html.Div([
             dcc.Dropdown(
-                id=prefix + "value",
+                id=_answer_id(qid),
                 options=[{"label": opt, "value": opt} for opt in question.options],
                 multi=True,
                 placeholder="Select and order items...",
@@ -125,20 +134,21 @@ def _render_question_input(question, qid):
         ])
 
     elif question.type == "matrix":
-        # Render a table-like matrix
+        # One radio-group per row (its answer is which column was picked).
         header_cells = [html.Th("")] + [html.Th(col) for col in question.matrix_cols]
         rows = []
         for row_label in question.matrix_rows:
-            cells = [html.Td(row_label)]
-            for _ in question.matrix_cols:
-                cells.append(html.Td(
+            rows.append(html.Tr([
+                html.Td(row_label),
+                html.Td(
                     dcc.RadioItems(
-                        id=f"{prefix}matrix_{row_label}",
+                        id=_answer_id(f"{qid}::{row_label}"),
                         options=[{"label": c, "value": c} for c in question.matrix_cols],
                         inline=True,
-                    )
-                ))
-            rows.append(html.Tr(cells))
+                    ),
+                    colSpan=len(question.matrix_cols) or 1,
+                ),
+            ]))
 
         return html.Div([
             html.Table([
@@ -149,7 +159,7 @@ def _render_question_input(question, qid):
 
     else:  # text
         return dcc.Textarea(
-            id=prefix + "value",
+            id=_answer_id(qid),
             rows=3,
             placeholder="Type your answer here...",
             style={"width": "100%"},

@@ -89,7 +89,7 @@ def _generate_question_chart(question, responses):
             if str(v) not in counts:
                 counts[str(v)] = 0
         return _bar_chart(counts, f"Responses to: {question.text}",
-                         x_order=list(range(min_val, max_val + 1)))
+                         x_order=[str(v) for v in range(min_val, max_val + 1)])
 
     elif question.type == "numeric_scale":
         numeric_answers = [a for a in answers if isinstance(a, (int, float))]
