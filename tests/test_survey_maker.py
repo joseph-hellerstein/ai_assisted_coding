@@ -1,33 +1,48 @@
-import asyncio, sys
-sys.path.insert(0, '/Users/jjheller/home/Technical/repos/ai_assisted_coding/src')
-from playwright.async_api import async_playwright
+"""Ad-hoc Playwright script: quick diagnostic pass over the Survey Maker
+Add-Question / Save flow. Self-starts its own server (matching the other
+scripts in this directory), so it needs nothing running beforehand:
+
+    python3 tests/test_survey_maker.py
+"""
+import asyncio
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _server_helper import start_server, stop_server  # noqa: E402
+
+PORT = 8056
+URL = f"http://127.0.0.1:{PORT}"
+
 
 async def test_survey_maker():
+    from playwright.async_api import async_playwright
+
     print('=== Test Survey Maker flow ===', flush=True)
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(viewport={"width": 1400, "height": 900})
-        await page.goto("http://127.0.0.1:8050")
-        
-        # Click Survey Maker tab using correct selector
-        print('Clicking Survey Maker tab...', flush=True)
-        await page.click("#main-tabs > div.tab >> text=Survey Maker", timeout=3000)
-        await page.wait_for_timeout(1500)
+        await page.goto(URL)
 
-        # Type title and description
-        title_input = page.locator("#maker-title input")
+        print('Clicking Survey Maker tab...', flush=True)
+        await page.click("text=Survey Maker", timeout=5000)
+        await page.wait_for_timeout(500)
+
+        # Type title and description — the id is on the input/textarea
+        # element itself, not a wrapping container.
+        title_input = page.locator("#maker-title")
         await title_input.fill("Test Survey")
         print(f'Title: {await title_input.input_value()}', flush=True)
-        
-        desc_ta = page.locator("#maker-description textarea")
+
+        desc_ta = page.locator("#maker-description")
         await desc_ta.fill("This is a test.")
         print(f'Desc: {await desc_ta.input_value()}', flush=True)
 
         # Click Add Question and wait for callback to process
         add_btn = page.locator("#maker-add-question")
         await add_btn.click()
-        await page.wait_for_timeout(2000)
-        
+        await page.wait_for_timeout(500)
+
         q_info = await page.evaluate("""() => {
             const container = document.querySelector('#maker-questions-container');
             if (!container) return {error: "no container", children_count: 0};
@@ -43,18 +58,14 @@ async def test_survey_maker():
         # Save survey
         print('Clicking Save Survey...', flush=True)
         await page.click("#maker-save-survey", timeout=5000)
-        await page.wait_for_timeout(1000)
+        await page.wait_for_timeout(500)
         status = await page.locator("#maker-status").inner_text()
         print(f'Status: {repr(status)}', flush=True)
 
-        # Check dropdown options after save (might need tab switch to refresh)
+        # Check dropdown options after save (options refresh on tab switch)
         dd_info = await page.evaluate("""() => {
-            const dd = document.querySelector('#maker-survey-select');
+            const dd = document.querySelector('[id*="maker-survey-select"]');
             if (!dd) return {found: false};
-            let txt = '';
-            for (let i=0; i<dd.children.length; i++) {
-                txt += (dd.children[i].textContent||'').substring(0,50) + '|';
-            }
             return {found: true, tag: dd.tagName, cls: String(dd.className||'')};
         }""")
         print(f'Dropdown after save: {dd_info}', flush=True)
@@ -62,4 +73,14 @@ async def test_survey_maker():
         await browser.close()
     print('=== Done ===', flush=True)
 
-asyncio.run(test_survey_maker())
+
+def main():
+    proc = start_server(PORT)
+    try:
+        asyncio.run(test_survey_maker())
+    finally:
+        stop_server(proc)
+
+
+if __name__ == "__main__":
+    main()
