@@ -14,10 +14,6 @@ This document provides brief descriptions of the content of epsidoes (a teaching
       2. Documentation: overall spec, module, function/method
       3. Design
       4. Tests
-         1. what is a test
-         2. writing tests
-         3. Bad tests: flakey, brittle
-         4. Coverage
 
 2. Running example
    1. Description of the survey manager
@@ -36,6 +32,12 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    2. Code review use case
 
 4. AI-Assisted implementation of unit tests
+   1. What is a test?
+   2. Writing manual tests.
+   3. Considerations for tests: coverage, not "brittle", robust (not "flakey"), computationally efficient
+   4. Test generation
+   5. Reviewing/modifying tests
+   6. When to modify tests and when to re-generate tests.
 
 5. Assisted small feature implementation
    1. Scope: function/method or small refactor
@@ -58,9 +60,9 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    2. Execute each step of the plan.
    3. Uses of specifications: documentation, refactoring, sustainability
 
-8. Adding features to a foreign repository
-
-9. Using the specification
+8. Using the specification
    1. Documentation
    2. Refactoring
    3. Sustainability
+
+9. Course review
