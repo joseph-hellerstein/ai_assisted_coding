@@ -29,6 +29,7 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    1. Review of LLM basics
       1. Prompts, tokens, context
       2. Set up in VSCode
+      3. ``git`` best practices (e.g., separate branch; use diff)
    2. Code review use case
 
 4. AI-Assisted implementation of unit tests
@@ -66,3 +67,5 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    3. Sustainability
 
 9. Course review
+   1. Summary
+   2. What's next: Skills, Agents
