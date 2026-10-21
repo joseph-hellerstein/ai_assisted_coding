@@ -74,6 +74,23 @@ class Response:
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 
+@dataclass
+class Draft:
+    """A partially completed, not-yet-submitted survey response."""
+    id: str
+    survey_id: str
+    label: str
+    saved_at: str
+    answers: dict[str, Any] = field(default_factory=dict)  # question_id -> answer
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Draft":
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
 def generate_id(prefix: str = "") -> str:
     """Generate a unique ID with optional prefix."""
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")

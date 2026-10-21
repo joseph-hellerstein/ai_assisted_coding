@@ -10,6 +10,7 @@ is empty outside of a real request.
 
 import app as app_module  # type: ignore
 from typing import cast
+from models import Question, Survey  # type: ignore
 
 
 def test_save_survey_callback_captures_live_text_typed_into_the_form():
@@ -118,10 +119,11 @@ def test_submit_survey_response_saves_answers_keyed_by_question_id():
     captured = {}
     app_module.save_response = lambda response: captured.__setitem__("response", response)
 
-    status = app_module.submit_survey_response(
+    status, *_ = app_module.submit_survey_response(
         1, "srv_1",
         ["Yes", "Great answer"],
         [{"type": "answer", "qid": "q_1"}, {"type": "answer", "qid": "q_2"}],
+        None,
     )
 
     resp = captured["response"]
@@ -138,6 +140,7 @@ def test_submit_survey_response_splits_matrix_composite_answers():
         1, "srv_1",
         ["Good"],
         [{"type": "answer", "qid": "q_9::Speed"}],
+        None,
     )
 
     assert captured["response"].answers == {"q_9_matrix_Speed": "Good"}
@@ -147,9 +150,99 @@ def test_submit_survey_response_without_survey_selected_does_not_save():
     saved = []
     app_module.save_response = lambda response: saved.append(response)
 
-    app_module.submit_survey_response(1, None, [], [])
+    app_module.submit_survey_response(1, None, [], [], None)
 
     assert saved == []
+
+
+def test_submit_survey_response_deletes_the_resumed_draft_after_saving():
+    app_module.save_response = lambda response: None
+    deleted = {}
+    app_module.delete_draft = lambda survey_id, draft_id: deleted.update(
+        survey_id=survey_id, draft_id=draft_id
+    )
+    app_module.list_drafts = lambda survey_id: []
+
+    status, current_draft_id, section_style = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    )
+
+    assert deleted == {"survey_id": "srv_1", "draft_id": "draft_1"}
+    assert current_draft_id is None
+    # That was the only draft, and it's gone now: section hides.
+    assert section_style.get("display") == "none"
+
+
+def test_submit_survey_response_keeps_the_section_visible_if_other_drafts_remain():
+    app_module.save_response = lambda response: None
+    app_module.delete_draft = lambda survey_id, draft_id: None
+    app_module.list_drafts = lambda survey_id: [
+        {"id": "draft_other", "label": "", "saved_at": "2026-10-20T09:00:00"}
+    ]
+
+    status, current_draft_id, section_style = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    )
+
+    assert section_style.get("display") == "block"
+
+
+def test_submit_survey_response_without_a_resumed_draft_does_not_touch_drafts():
+    app_module.save_response = lambda response: None
+    app_module.delete_draft = lambda survey_id, draft_id: (_ for _ in ()).throw(
+        AssertionError("delete_draft should not be called when nothing was resumed")
+    )
+
+    app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None,
+    )
+
+
+def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
+    # Regression guard: the Submit button is recreated by show_survey every
+    # time a survey/draft is selected, and Dash fires a callback like this
+    # one once, spuriously, at n_clicks=0 the moment that freshly-mounted
+    # button first appears, whenever the callback also writes to a
+    # component that already exists outside the dynamic form (here, the
+    # draft-id Store) -- it must do nothing, not save a phantom response.
+    saved = []
+    app_module.save_response = lambda response: saved.append(response)
+
+    status, current_draft_id, section_style = app_module.submit_survey_response(
+        0, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    )
+
+    assert saved == []
+    assert status is app_module.no_update
+    assert current_draft_id is app_module.no_update
+    assert section_style is app_module.no_update
+
+
+def test_refresh_draft_list_hides_the_section_when_the_survey_has_no_drafts():
+    app_module.list_drafts = lambda survey_id: []
+
+    options, style = app_module.refresh_draft_list("srv_1")
+
+    assert options == []
+    assert style.get("display") == "none"
+
+
+def test_refresh_draft_list_shows_the_section_when_the_survey_has_drafts():
+    app_module.list_drafts = lambda survey_id: [
+        {"id": "draft_1", "label": "My draft", "saved_at": "2026-10-20T09:00:00"}
+    ]
+
+    options, style = app_module.refresh_draft_list("srv_1")
+
+    assert len(options) == 1
+    assert style.get("display") == "block"
+
+
+def test_refresh_draft_list_hides_the_section_when_no_survey_selected():
+    options, style = app_module.refresh_draft_list(None)
+
+    assert options == []
+    assert style.get("display") == "none"
 
 
 def test_show_survey_only_renders_form_no_inline_callback_registration():
@@ -214,6 +307,73 @@ def test_perform_delete_survey_refreshes_dropdown_excluding_deleted_survey():
     assert "deleted" in str(status).lower() or "✅" in str(status)
 
 
+def test_save_draft_callback_saves_live_answers_and_generates_a_new_draft_id():
+    captured = {}
+    app_module.save_draft = lambda draft: captured.__setitem__("draft", draft)
+    app_module.list_drafts = lambda survey_id: []
+
+    status, options, select_value, current_draft_id, section_style = app_module.save_draft_callback(
+        1, "srv_1", "My label", None,
+        ["Yes"], [{"type": "answer", "qid": "q_1"}],
+    )
+
+    draft = captured["draft"]
+    assert draft.survey_id == "srv_1"
+    assert draft.label == "My label"
+    assert draft.answers == {"q_1": "Yes"}
+    # select_value is deliberately left as no_update: writing it would be an
+    # Input to show_survey, which would immediately rebuild the form and
+    # wipe this very status message.
+    assert select_value is app_module.no_update
+    # current_draft_id is deliberately left as no_update too (it was None
+    # going in, i.e. nothing was explicitly resumed): tracking this fresh
+    # draft as "current" would make the *next* unrelated Save for Later
+    # click silently overwrite it instead of creating its own new draft.
+    assert current_draft_id is app_module.no_update
+    assert "✅" in str(status) or "saved" in str(status).lower()
+
+
+def test_save_draft_callback_creates_a_separate_draft_each_time_nothing_was_resumed():
+    # Regression guard: two distinct, never-resumed save attempts (e.g. the
+    # user fills in a survey, saves, keeps editing, and saves again without
+    # ever picking anything from the resume dropdown) must end up as two
+    # separate drafts, not one overwriting the other.
+    saved_ids = []
+    app_module.save_draft = lambda draft: saved_ids.append(draft.id)
+    app_module.list_drafts = lambda survey_id: []
+
+    app_module.save_draft_callback(1, "srv_1", "", None, ["Yes"], [{"type": "answer", "qid": "q_1"}])
+    app_module.save_draft_callback(1, "srv_1", "", None, ["No"], [{"type": "answer", "qid": "q_1"}])
+
+    assert len(saved_ids) == 2
+    assert saved_ids[0] != saved_ids[1]
+
+
+def test_save_draft_callback_reuses_the_current_draft_id_instead_of_duplicating():
+    captured = {}
+    app_module.save_draft = lambda draft: captured.__setitem__("draft", draft)
+    app_module.list_drafts = lambda survey_id: []
+
+    app_module.save_draft_callback(
+        1, "srv_1", "", "draft_existing",
+        ["Yes"], [{"type": "answer", "qid": "q_1"}],
+    )
+
+    assert captured["draft"].id == "draft_existing"
+
+
+def test_save_draft_callback_without_survey_selected_shows_warning_and_does_not_save():
+    saved = []
+    app_module.save_draft = lambda draft: saved.append(draft)
+
+    status, options, select_value, current_draft_id, section_style = app_module.save_draft_callback(
+        1, None, "", None, [], [],
+    )
+
+    assert saved == []
+    assert "⚠" in str(status) or "select" in str(status).lower()
+
+
 def test_submit_callback_is_registered_statically_at_import_time():
     # The real bug-5 regression guard: the submit callback must be part of
     # the app's callback graph from the moment the module is imported, not
@@ -222,3 +382,142 @@ def test_submit_callback_is_registered_statically_at_import_time():
     from dash._callback import GLOBAL_CALLBACK_MAP
     keys = list(app_module.app.callback_map.keys()) + list(GLOBAL_CALLBACK_MAP.keys())
     assert any("taker-status" in k for k in keys)
+
+
+def test_delete_draft_callback_deletes_the_current_draft_and_clears_store():
+    deleted = {}
+    app_module.delete_draft = lambda survey_id, draft_id: deleted.update(
+        survey_id=survey_id, draft_id=draft_id
+    )
+    app_module.list_drafts = lambda survey_id: [
+        {"id": "draft_other", "label": "", "saved_at": "2026-10-20T09:00:00"}
+    ]
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
+
+    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+        1, "srv_1", "draft_1",
+    )
+
+    assert deleted == {"survey_id": "srv_1", "draft_id": "draft_1"}
+    assert current_draft_id is None
+    # The status message is baked into the rebuilt form itself (see the
+    # dedicated test below for why), so this Output is a no-op here.
+    assert status is app_module.no_update
+    [form_component] = form
+    status_div = _find_answer_component(form_component, "taker-status")
+    assert "deleted" in str(status_div.children).lower()
+    # Another draft still exists for this survey, so the section stays visible.
+    assert section_style.get("display") == "block"
+
+
+def test_delete_draft_callback_resets_the_form_to_blank_no_answers_filled_in():
+    # The user should land back on a blank Survey Taker, not on the
+    # resumed draft's answers, once that draft no longer exists.
+    deleted = {}
+    app_module.delete_draft = lambda survey_id, draft_id: deleted.update(
+        survey_id=survey_id, draft_id=draft_id
+    )
+    app_module.list_drafts = lambda survey_id: []
+    q = Question(id="q_1", type="text", text="Tell us more")
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[q])
+
+    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+        1, "srv_1", "draft_1",
+    )
+
+    [form_component] = form
+    answer_field = _find_answer_component(form_component, {"type": "answer", "qid": "q_1"})
+    assert answer_field is not None
+    assert answer_field.value == ""
+
+
+def _find_answer_component(component, target_id):
+    cid = getattr(component, "id", None)
+    if cid == target_id:
+        return component
+    children = getattr(component, "children", None)
+    if isinstance(children, (list, tuple)):
+        for c in children:
+            found = _find_answer_component(c, target_id)
+            if found is not None:
+                return found
+    elif children is not None and (hasattr(children, "id") or hasattr(children, "children")):
+        return _find_answer_component(children, target_id)
+    return None
+
+
+def test_delete_draft_callback_hides_section_when_no_drafts_remain():
+    app_module.delete_draft = lambda survey_id, draft_id: None
+    app_module.list_drafts = lambda survey_id: []
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
+
+    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+        1, "srv_1", "draft_1",
+    )
+
+    assert section_style.get("display") == "none"
+
+
+def test_delete_draft_callback_without_a_draft_selected_shows_warning():
+    app_module.delete_draft = lambda survey_id, draft_id: (_ for _ in ()).throw(
+        AssertionError("delete_draft should not be called when nothing is selected")
+    )
+
+    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+        1, "srv_1", None,
+    )
+
+    assert "⚠" in str(status) or "no draft" in str(status).lower()
+    assert form is app_module.no_update
+
+
+def test_delete_response_row_persists_deletion_and_refreshes_summary():
+    deleted = {}
+    app_module.delete_response = lambda response_id, survey_id: deleted.update(
+        response_id=response_id, survey_id=survey_id
+    )
+    app_module.load_survey = lambda sid: type(
+        "S", (), {"title": "My Survey", "questions": []}
+    )()
+    app_module.load_responses = lambda sid: []
+
+    data_previous = [
+        {"Response ID": "resp_1", "Submitted At": "t1"},
+        {"Response ID": "resp_2", "Submitted At": "t2"},
+    ]
+    data = [{"Response ID": "resp_1", "Submitted At": "t1"}]
+
+    response_count, charts = app_module.delete_response_row(data, data_previous, "srv_1")
+
+    assert deleted == {"response_id": "resp_2", "survey_id": "srv_1"}
+    assert "My Survey" in str(response_count)
+
+
+def test_delete_response_row_ignores_a_survey_switch_data_change():
+    # Switching surveys also rewrites the table's "data" via analyze_survey.
+    # None of the new survey's response ids were present before, so this
+    # must NOT be misread as "every old response got deleted".
+    called = []
+    app_module.delete_response = lambda response_id, survey_id: called.append(response_id)
+
+    data_previous = [{"Response ID": "resp_1", "Submitted At": "t1"}]
+    data = [{"Response ID": "resp_other", "Submitted At": "t9"}]
+
+    app_module.delete_response_row(data, data_previous, "srv_2")
+
+    assert called == []
+
+
+def test_delete_response_row_ignores_changes_that_are_not_a_single_row_removal():
+    called = []
+    app_module.delete_response = lambda response_id, survey_id: called.append(response_id)
+
+    data_previous = [{"Response ID": "resp_1", "Submitted At": "t1"}]
+    data = [
+        {"Response ID": "resp_1", "Submitted At": "t1"},
+        {"Response ID": "resp_2", "Submitted At": "t2"},
+    ]
+
+    app_module.delete_response_row(data, data_previous, "srv_1")
+
+    assert called == []

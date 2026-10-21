@@ -38,6 +38,7 @@ def survey_analyzer_layout():
             html.H3("Raw Responses", style={"marginTop": "30px"}),
             dash_table.DataTable(
                 id="analyzer-data-table",
+                row_deletable=True,
                 page_size=15,
                 style_table={"overflowX": "auto"},
                 style_cell={

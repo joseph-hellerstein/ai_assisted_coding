@@ -10,7 +10,11 @@ from form_logic import (  # type: ignore
     assemble_questions_from_state,
     remove_question_by_qid,
     build_response_answers_from_state,
+    answer_value_for_qid,
+    draft_option_label,
+    count_completed_questions,
 )
+from models import Question  # type: ignore
 
 
 def test_lines_to_list_splits_and_strips_blank_lines():
@@ -212,3 +216,89 @@ def test_build_response_answers_from_state_splits_matrix_composite_qids():
         "q_1_matrix_Speed": "Good",
         "q_1_matrix_Quality": "Great",
     }
+
+
+def test_answer_value_for_qid_returns_plain_answer_by_qid():
+    assert answer_value_for_qid({"q_1": "Yes"}, "q_1") == "Yes"
+
+
+def test_answer_value_for_qid_returns_none_when_missing():
+    assert answer_value_for_qid({}, "q_1") is None
+
+
+def test_answer_value_for_qid_resolves_matrix_composite_qid():
+    # Mirrors build_response_answers_from_state's forward mapping, so a
+    # resumed draft's matrix answers land back on the right row input.
+    answers = {"q_9_matrix_Speed": "Good"}
+    assert answer_value_for_qid(answers, "q_9::Speed") == "Good"
+
+
+def test_draft_option_label_uses_label_when_present():
+    assert draft_option_label("My draft", "2026-10-20T15:30:00") == "My draft"
+
+
+def test_draft_option_label_falls_back_to_formatted_timestamp_when_label_blank():
+    assert draft_option_label("", "2026-10-20T15:30:00") == "Saved 2026-10-20 15:30:00"
+
+
+def test_draft_option_label_falls_back_to_formatted_timestamp_when_label_none():
+    assert draft_option_label(None, "2026-10-20T09:05:00") == "Saved 2026-10-20 09:05:00"
+
+
+def test_draft_option_label_distinguishes_drafts_saved_in_the_same_minute():
+    # Several unlabeled drafts can now be saved within one sitting (see the
+    # save_draft_callback fix), often within the same minute -- the label
+    # needs second-level precision or they'd be indistinguishable in the
+    # resume dropdown.
+    a = draft_option_label("", "2026-10-20T15:30:01")
+    b = draft_option_label("", "2026-10-20T15:30:47")
+    assert a != b
+
+
+def test_count_completed_questions_counts_plain_non_empty_answers():
+    questions = [
+        Question(id="q_1", type="text", text="A"),
+        Question(id="q_2", type="yesno", text="B"),
+    ]
+    answers = {"q_1": "Some text", "q_2": "Yes"}
+    assert count_completed_questions(questions, answers) == 2
+
+
+def test_count_completed_questions_ignores_empty_or_missing_answers():
+    questions = [
+        Question(id="q_1", type="text", text="A"),
+        Question(id="q_2", type="checkbox", text="B", options=["X"]),
+        Question(id="q_3", type="text", text="C"),
+    ]
+    answers = {"q_1": "", "q_2": []}  # q_3 missing entirely
+    assert count_completed_questions(questions, answers) == 0
+
+
+def test_count_completed_questions_treats_zero_as_a_real_answer():
+    # A literal 0 (e.g. a numeric_scale answer) must count as answered,
+    # not be mistaken for "empty" the way a falsy check would.
+    questions = [Question(id="q_1", type="numeric_scale", text="A", scale_min=0, scale_max=5)]
+    answers = {"q_1": 0}
+    assert count_completed_questions(questions, answers) == 1
+
+
+def test_draft_option_label_appends_progress_when_available():
+    label = draft_option_label("My draft", "2026-10-20T15:30:00", questions_completed=2, total_questions=5)
+    assert label == "My draft (2/5 answered)"
+
+
+def test_draft_option_label_omits_progress_when_unavailable():
+    # e.g. the survey itself could no longer be loaded to count against.
+    label = draft_option_label("My draft", "2026-10-20T15:30:00", questions_completed=None, total_questions=None)
+    assert label == "My draft"
+
+
+def test_count_completed_questions_requires_every_matrix_row_answered():
+    q = Question(id="q_1", type="matrix", text="Rate these",
+                 matrix_rows=["Speed", "Quality"], matrix_cols=["Poor", "Good"])
+
+    partially_answered = {"q_1_matrix_Speed": "Good"}
+    assert count_completed_questions([q], partially_answered) == 0
+
+    fully_answered = {"q_1_matrix_Speed": "Good", "q_1_matrix_Quality": "Poor"}
+    assert count_completed_questions([q], fully_answered) == 1

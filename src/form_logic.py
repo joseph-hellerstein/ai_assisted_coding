@@ -6,6 +6,8 @@ tested directly, without going through a running Dash server.
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 from models import Question  # type: ignore
 
 
@@ -143,3 +145,58 @@ def build_response_answers_from_state(qids: list[str], values: list) -> dict:
         else:
             answers[qid] = value
     return answers
+
+
+def answer_value_for_qid(answers: dict, qid: str):
+    """Look up the saved value for an answer field's qid in a Draft/Response
+    answers dict, inverting build_response_answers_from_state's key mapping.
+
+    Used to prefill a resumed draft's form fields: a plain qid is looked up
+    directly, a matrix row's composite qid ("question_id::row") is looked up
+    under its f"{question_id}_matrix_{row}" key.
+    """
+    if "::" in qid:
+        base_qid, row = qid.split("::", 1)
+        return answers.get(f"{base_qid}_matrix_{row}")
+    return answers.get(qid)
+
+
+def _is_answered(value) -> bool:
+    """A value counts as answered unless it's missing/empty; a literal 0
+    (e.g. a numeric_scale answer) must still count, unlike a plain truthy
+    check would treat it."""
+    return value not in (None, "", [])
+
+
+def count_completed_questions(questions: list[Question], answers: dict) -> int:
+    """How many of `questions` have a real answer in a Draft/Response
+    answers dict. A matrix question counts as completed only once every
+    one of its rows has an answer; every other type is a single lookup.
+    """
+    completed = 0
+    for q in questions:
+        if q.type == "matrix":
+            if q.matrix_rows and all(_is_answered(answers.get(f"{q.id}_matrix_{row}")) for row in q.matrix_rows):
+                completed += 1
+        elif _is_answered(answers.get(q.id)):
+            completed += 1
+    return completed
+
+
+def draft_option_label(
+    label: str | None,
+    saved_at: str,
+    questions_completed: int | None = None,
+    total_questions: int | None = None,
+) -> str:
+    """Label shown for a saved draft in the resume dropdown.
+
+    Uses the user-supplied label if they gave one, otherwise falls back to
+    a formatted save timestamp so every draft is still distinguishable.
+    Appends "(N/M answered)" whenever both counts are available (they
+    won't be if the survey itself could no longer be loaded).
+    """
+    base = label if label else "Saved " + datetime.fromisoformat(saved_at).strftime("%Y-%m-%d %H:%M:%S")
+    if questions_completed is None or total_questions is None:
+        return base
+    return f"{base} ({questions_completed}/{total_questions} answered)"

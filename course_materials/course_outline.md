@@ -24,13 +24,24 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    3. A simple ``Dash`` application
    4. HTML
    5. ``callbacks``
+   6. Information model. These are the functions in storage. (See docs/data-model.md.) This is the main abstraction that is shared between the human and the AI.
+      1. Survey
+      2. Response
+      3. Draft
+      4. Question
+   7. (A1) Adding a simple feature
+      1. Delete comment characters (enable code) in ``appy.py`` for #A1#
+      2. Get a "hover" by assigning a value to ``title``
 
 3. AI assisted code review
    1. Review of LLM basics
       1. Prompts, tokens, context
       2. Set up in VSCode
       3. ``git`` best practices (e.g., separate branch; use diff)
-   2. Code review use case
+   2. (A2) Code review use case - Add Survey Taker status hovers
+      1. Have existing code for status cover for Survey Maker
+      2. Replicate the same technique for Survey Taker using ``load_drafts()`` by reporting how many questions completed.
+      3. Prompt "Please review my implementation of the hover for Survey Taker"
 
 4. AI-Assisted implementation of unit tests
    1. What is a test?
