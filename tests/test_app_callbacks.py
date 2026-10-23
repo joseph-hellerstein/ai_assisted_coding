@@ -162,8 +162,9 @@ def test_submit_survey_response_deletes_the_resumed_draft_after_saving():
         survey_id=survey_id, draft_id=draft_id
     )
     app_module.list_drafts = lambda survey_id: []
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
 
-    status, current_draft_id, section_style = app_module.submit_survey_response(
+    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
         1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
     )
 
@@ -179,8 +180,9 @@ def test_submit_survey_response_keeps_the_section_visible_if_other_drafts_remain
     app_module.list_drafts = lambda survey_id: [
         {"id": "draft_other", "label": "", "saved_at": "2026-10-20T09:00:00"}
     ]
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
 
-    status, current_draft_id, section_style = app_module.submit_survey_response(
+    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
         1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
     )
 
@@ -208,7 +210,7 @@ def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
     saved = []
     app_module.save_response = lambda response: saved.append(response)
 
-    status, current_draft_id, section_style = app_module.submit_survey_response(
+    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
         0, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
     )
 
@@ -216,6 +218,45 @@ def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
     assert status is app_module.no_update
     assert current_draft_id is app_module.no_update
     assert section_style is app_module.no_update
+    assert tab_label is app_module.no_update
+
+
+def test_taker_tab_label_shows_no_current_draft_when_nothing_qualifies():
+    app_module.get_draft_info = lambda survey_id: ("", 0, 0, 0)
+
+    label = app_module._taker_tab_label(None)
+
+    assert label.title == "No current draft"
+
+
+def test_taker_tab_label_shows_progress_for_the_selected_surveys_draft():
+    app_module.get_draft_info = lambda survey_id: ("My Survey", 2, 5, 1)
+
+    label = app_module._taker_tab_label("srv_1")
+
+    assert label.title == "My Survey: 2/5 answered"
+
+
+def test_taker_tab_label_mentions_extra_drafts_when_more_than_one_exists():
+    app_module.get_draft_info = lambda survey_id: ("My Survey", 2, 5, 3)
+
+    label = app_module._taker_tab_label("srv_1")
+
+    assert "3 drafts saved" in label.title
+
+
+def test_refresh_taker_tab_hover_delegates_to_the_currently_selected_survey():
+    # Regression guard for the actual bug report: this must be keyed off
+    # whichever survey is selected in the Taker's own dropdown right now,
+    # not computed once when the server process started (which is why the
+    # old version could show a draft that had since been deleted, or miss
+    # one that had since been created).
+    seen = []
+    app_module.get_draft_info = lambda survey_id: seen.append(survey_id) or ("", 0, 0, 0)
+
+    app_module.refresh_taker_tab_hover("tab-taker", "srv_42")
+
+    assert seen == ["srv_42"]
 
 
 def test_refresh_draft_list_hides_the_section_when_the_survey_has_no_drafts():
@@ -311,8 +352,9 @@ def test_save_draft_callback_saves_live_answers_and_generates_a_new_draft_id():
     captured = {}
     app_module.save_draft = lambda draft: captured.__setitem__("draft", draft)
     app_module.list_drafts = lambda survey_id: []
+    app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
 
-    status, options, select_value, current_draft_id, section_style = app_module.save_draft_callback(
+    status, options, select_value, current_draft_id, section_style, tab_label = app_module.save_draft_callback(
         1, "srv_1", "My label", None,
         ["Yes"], [{"type": "answer", "qid": "q_1"}],
     )
@@ -366,7 +408,7 @@ def test_save_draft_callback_without_survey_selected_shows_warning_and_does_not_
     saved = []
     app_module.save_draft = lambda draft: saved.append(draft)
 
-    status, options, select_value, current_draft_id, section_style = app_module.save_draft_callback(
+    status, options, select_value, current_draft_id, section_style, tab_label = app_module.save_draft_callback(
         1, None, "", None, [], [],
     )
 
@@ -394,7 +436,7 @@ def test_delete_draft_callback_deletes_the_current_draft_and_clears_store():
     ]
     app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
 
-    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+    status, form, current_draft_id, section_style, tab_label = app_module.delete_draft_callback(
         1, "srv_1", "draft_1",
     )
 
@@ -421,7 +463,7 @@ def test_delete_draft_callback_resets_the_form_to_blank_no_answers_filled_in():
     q = Question(id="q_1", type="text", text="Tell us more")
     app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[q])
 
-    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+    status, form, current_draft_id, section_style, tab_label = app_module.delete_draft_callback(
         1, "srv_1", "draft_1",
     )
 
@@ -451,7 +493,7 @@ def test_delete_draft_callback_hides_section_when_no_drafts_remain():
     app_module.list_drafts = lambda survey_id: []
     app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
 
-    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+    status, form, current_draft_id, section_style, tab_label = app_module.delete_draft_callback(
         1, "srv_1", "draft_1",
     )
 
@@ -463,7 +505,7 @@ def test_delete_draft_callback_without_a_draft_selected_shows_warning():
         AssertionError("delete_draft should not be called when nothing is selected")
     )
 
-    status, form, current_draft_id, section_style = app_module.delete_draft_callback(
+    status, form, current_draft_id, section_style, tab_label = app_module.delete_draft_callback(
         1, "srv_1", None,
     )
 

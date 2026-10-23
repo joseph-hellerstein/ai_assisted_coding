@@ -29,8 +29,7 @@ from form_logic import (  # type: ignore
     build_response_answers_from_state,
     draft_option_label,
 )
-#A2#from src.helpers import get_draft_info  #A2#
-
+from helpers import get_draft_info  # type: ignore
 
 
 # ===== Create the app instance at module level so callbacks can register =====
@@ -42,23 +41,24 @@ app = Dash(
 )
 
 # Define tabs
-title = ""
-_survey_titles = "\n".join(f"- {s['title']}" for s in list_surveys()) or "No surveys yet"  #A1#
+_survey_titles = "\n".join(f"- {s['title']}" for s in list_surveys()) or "No surveys yet"
 maker_tab = dcc.Tab(
     [survey_maker.survey_maker_layout()],
     label=html.Span(
         "Survey Maker",
-        title=f"Available surveys:\n{_survey_titles}", #A1#
+        title=f"Available surveys:\n{_survey_titles}",
     ),
 )
 
-survey_name = ""; num_question = 0; num_response = 0
-#A2#survey_name, num_question, num_response = get_draft_info()  #A2#
+# The hover for this tab's label is populated live by refresh_taker_tab_hover
+# below (keyed off which survey is selected in the Taker's own dropdown),
+# not computed once here: that used to bake in whatever was true the moment
+# the server process started, so it went stale the instant a draft was
+# saved, resumed, or deleted during a running session.
 taker_tab = dcc.Tab(
-        [survey_taker.survey_taker_layout()], 
-        label=html.Span("Survey Taker",
-        title=f"{survey_name}: {num_response}/{num_question}" if survey_name else "No current draft"
-    )
+    [survey_taker.survey_taker_layout()],
+    id=cn.L_TAKER_TAB,
+    label=html.Span("Survey Taker", title="No current draft"),
 )
 analyzer_tab = dcc.Tab([survey_analyzer.survey_analyzer_layout()], label="Survey Analyzer")
 
@@ -294,6 +294,40 @@ def refresh_taker_list(tabs_value):
     return [{"label": s["title"], cn.L_VALUE: s["id"]} for s in surveys]
 
 
+def _taker_tab_label(survey_id):
+    """The Survey Taker tab's own label, with a hover showing the
+    "current" draft -- whichever survey is selected in the Taker's own
+    dropdown right now, not a guess made once at server startup.
+    """
+    survey_title, completed, total, draft_count = get_draft_info(survey_id)
+    if not survey_title:
+        tooltip = "No current draft"
+    else:
+        tooltip = f"{survey_title}: {completed}/{total} answered"
+        if draft_count > 1:
+            tooltip += f" ({draft_count} drafts saved)"
+    return html.Span("Survey Taker", title=tooltip)
+
+
+@callback(
+    Output(cn.L_TAKER_TAB, "label"),
+    Input("main-tabs", cn.L_VALUE),
+    Input("taker-survey-select", cn.L_VALUE),
+)
+def refresh_taker_tab_hover(tabs_value, survey_id):
+    """Keep the Survey Taker tab's hover live.
+
+    Refreshed on every tab switch and every survey selection change, and
+    also re-set directly by save_draft_callback, delete_draft_callback,
+    and submit_survey_response below (each saving/deleting/submitting a
+    draft changes what this hover should say, without necessarily
+    changing either of this callback's own Inputs). No
+    prevent_initial_call here, deliberately: it should already be correct
+    the moment the page loads, not just after the first interaction.
+    """
+    return _taker_tab_label(survey_id)
+
+
 def _draft_options(survey_id):
     """Dropdown options for every saved draft of a survey, newest first."""
     return [
@@ -361,6 +395,7 @@ def show_survey(survey_id, draft_id):
     Output(cn.L_TAKER_DRAFT_SELECT, cn.L_VALUE, allow_duplicate=True),
     Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
     Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_TAB, "label", allow_duplicate=True),
     Input(cn.L_TAKER_SAVE_DRAFT, "n_clicks"),
     State("taker-survey-select", cn.L_VALUE),
     State(cn.L_TAKER_DRAFT_LABEL, cn.L_VALUE),
@@ -386,7 +421,7 @@ def save_draft_callback(n_clicks, survey_id, label, current_draft_id, values, id
     if not survey_id:
         return (
             html.Span("⚠️ Select a survey first.", style={"color": "orange"}),
-            no_update, no_update, no_update, no_update,
+            no_update, no_update, no_update, no_update, no_update,
         )
 
     qids = [d["qid"] for d in ids]
@@ -413,6 +448,7 @@ def save_draft_callback(n_clicks, survey_id, label, current_draft_id, values, id
         no_update,
         updated_current_draft_id,
         _draft_section_style(True),  # a draft now definitely exists for this survey
+        _taker_tab_label(survey_id),
     )
 
 
@@ -421,6 +457,7 @@ def save_draft_callback(n_clicks, survey_id, label, current_draft_id, values, id
     Output("taker-survey-form", cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
     Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_TAB, "label", allow_duplicate=True),
     Input(cn.L_TAKER_DELETE_DRAFT, "n_clicks"),
     State("taker-survey-select", cn.L_VALUE),
     State(cn.L_TAKER_CURRENT_DRAFT_STORE, "data"),
@@ -444,7 +481,10 @@ def delete_draft_callback(n_clicks, survey_id, current_draft_id):
     next time the survey is reselected.
     """
     if not survey_id or not current_draft_id:
-        return html.Span("⚠️ No draft selected to delete.", style={"color": "orange"}), no_update, no_update, no_update
+        return (
+            html.Span("⚠️ No draft selected to delete.", style={"color": "orange"}),
+            no_update, no_update, no_update, no_update,
+        )
 
     delete_draft(survey_id, current_draft_id)
     section_style = _draft_section_style(bool(list_drafts(survey_id)))
@@ -460,6 +500,7 @@ def delete_draft_callback(n_clicks, survey_id, current_draft_id):
         blank_form,
         None,
         section_style,
+        _taker_tab_label(survey_id),
     )
 
 
@@ -467,6 +508,7 @@ def delete_draft_callback(n_clicks, survey_id, current_draft_id):
     Output(cn.L_TAKER_STATUS, cn.L_CHILDREN),
     Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
     Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_TAB, "label", allow_duplicate=True),
     Input(cn.L_TAKER_SUBMIT, "n_clicks"),
     State("taker-survey-select", cn.L_VALUE),
     State({"type": "answer", "qid": ALL}, cn.L_VALUE),
@@ -504,9 +546,9 @@ def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id):
     already guards against the exact same quirk for that reason.
     """
     if not n_clicks:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
     if not survey_id:
-        return html.Span("⚠️ No survey selected.", style={"color": "orange"}), no_update, no_update
+        return html.Span("⚠️ No survey selected.", style={"color": "orange"}), no_update, no_update, no_update
 
     qids = [d["qid"] for d in ids]
     answers = build_response_answers_from_state(qids, values)
@@ -530,6 +572,7 @@ def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id):
         html.Span("✅ Thank you! Your response has been recorded.", style={"color": "green"}),
         cleared_draft_id,
         section_style,
+        _taker_tab_label(survey_id),
     )
 
 

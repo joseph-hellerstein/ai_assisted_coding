@@ -133,7 +133,7 @@ def load_draft(survey_id: str, draft_id: str) -> Optional[Draft]:
     return Draft.from_dict(data)
 
 
-def list_drafts(survey_id: str) -> list[dict]:
+def list_drafts(survey_id: str )-> list[dict]:
     """List all saved drafts for a survey: id, label, saved_at, and how
     many of the survey's questions each draft has actually answered
     (`questions_completed`) out of how many there are (`total_questions`).

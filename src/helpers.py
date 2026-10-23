@@ -1,34 +1,34 @@
 '''Helper functions for the survey app.'''
+from __future__ import annotations
 
-import src.constants as cn
-from src.storage import (  # type: ignore
-    save_survey, load_survey, list_surveys, save_response, load_responses, delete_survey,
-    delete_response, save_draft, load_draft, list_drafts, delete_draft,
-)
+from storage import load_survey, list_drafts  # type: ignore
 
-#A2#def get_draft_info() -> tuple[str, int, int]:   #2#
-#A2#    """   #2#
-#A2#    Get information about the current draft.   #2#
-#A2#       #2#
-#A2#    Returns:   #2#
-#A2#        A tuple containing the   #2#
-#A2#            survey title   #2#
-#A2#            number of questions   #2#
-#A2#            number of responses   #2#
-#A2#    """   #2#
-#A2#    # Get the survey ids   #2#
-#A2#    survey_title = ""   #2#
-#A2#    num_question = 0   #2#
-#A2#    num_completed = 0   #2#
-#A2#    for survey_info in list_surveys():   #2#
-#A2#        survey_id = survey_info[cn.L_ID]   #2#
-#A2#        drafts = list_drafts(survey_id)   #2#
-#A2#        if len(drafts) == 0:   #2#
-#A2#            continue   #2#
-#A2#        survey_title = survey_info[cn.L_TITLE]   #2#
-#A2#        draft = drafts[0]  # Assuming only one draft per survey   #2#
-#A2#        import pdb; pdb.set_trace()  # Debugging breakpoint   #2#
-#A2#        num_question = draft['total_questions']   #2#
-#A2#        num_completed = draft['questions_completed' ]   #2#
-#A2#        break   #2#
-#A2#    return survey_title, num_question, num_completed   #2#
+
+def get_draft_info(survey_id: str | None) -> tuple[str, int, int, int]:
+    """Info about `survey_id`'s most recently saved draft, for the Survey
+    Taker tab's hover tooltip.
+
+    "Current" means whichever survey is selected in the Survey Taker
+    tab's own dropdown right now -- the caller is responsible for passing
+    that selection in; this function no longer guesses at one by scanning
+    every survey (a survey could have any number of drafts, so "the"
+    current draft was never well-defined that way).
+
+    Returns (survey_title, questions_completed, total_questions,
+    draft_count). survey_title is "" (and the other fields 0) when
+    `survey_id` is falsy, the survey can no longer be loaded, or it has no
+    saved drafts -- the caller treats that as "no current draft".
+    """
+    if not survey_id:
+        return "", 0, 0, 0
+
+    survey = load_survey(survey_id)
+    if not survey:
+        return "", 0, 0, 0
+
+    drafts = list_drafts(survey_id)
+    if not drafts:
+        return "", 0, 0, 0
+
+    newest = drafts[0]  # list_drafts sorts newest-first
+    return survey.title, newest["questions_completed"], newest["total_questions"], len(drafts)
