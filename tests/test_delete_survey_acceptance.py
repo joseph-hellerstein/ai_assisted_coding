@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _server_helper import start_server, stop_server  # noqa: E402
+from _server_helper import start_server, stop_server  # type: ignore
 
 ROOT = Path(__file__).parent.parent
 SURVEYS_DIR = ROOT / "surveys"

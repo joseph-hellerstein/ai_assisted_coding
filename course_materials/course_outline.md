@@ -46,16 +46,18 @@ This document provides brief descriptions of the content of epsidoes (a teaching
 4. AI-Assisted implementation of unit tests
    1. What is a test?
    2. Writing manual tests.
-   3. Considerations for tests: coverage, not "brittle", robust (not "flakey"), computationally efficient
-   4. Test generation
-   5. Reviewing/modifying tests
-   6. When to modify tests and when to re-generate tests.
+   3. Write tests for ``get_draft_info``. **Need to populate state.**
+   4. Considerations for tests: coverage, not "brittle", robust (not "flakey"), computationally efficient
+   5. Test generation
+   6. Reviewing/modifying tests
+   7. When to modify tests and when to re-generate tests.
 
 5. Assisted small feature implementation
    1. Scope: function/method or small refactor
-   2. Use case 1: Complete a partial implementation
+   2. Example: Create a plot in Survey Analyzer showing the CDF of survey responses.
+   3. Use case 1: Complete a partial implementation
       1. Implementation may have comments in sections and errors in others.
-   3. Use case 2: AI creates from scratch
+   4. Use case 2: AI creates from scratch
       1. Write function doc
       2. AI implementation
       3. Review and iterate

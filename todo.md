@@ -1,6 +1,3 @@
 # To Do
 
-1. Build the Survey manager
-2. Refine the L.O. and outline.
-3. New
-   1. Related courses
+Need a convenient way to populate the survey data for testing. Create JSON files? Need convenience for generating arbitrary responses to survey questions and storing them. Also, clearing them. Use a temp directory?
