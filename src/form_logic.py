@@ -6,9 +6,10 @@ tested directly, without going through a running Dash server.
 """
 from __future__ import annotations
 
+import random
 from datetime import datetime
 
-from models import Question  # type: ignore
+from src.models import Question  # type: ignore
 
 
 def lines_to_list(text: str | None) -> list[str]:
@@ -181,6 +182,23 @@ def count_completed_questions(questions: list[Question], answers: dict) -> int:
         elif _is_answered(answers.get(q.id)):
             completed += 1
     return completed
+
+
+def generate_respondent_id(rng: random.Random | None = None) -> str:
+    """A random 5-digit id (zero-padded, e.g. "00482") to prefill the Survey
+    Taker's respondent-id field. The respondent may overwrite it with their
+    own, so this is only ever a starting suggestion, not a guarantee of
+    uniqueness.
+    """
+    rng = rng or random.Random()
+    return f"{rng.randint(0, 99999):05d}"
+
+
+def is_valid_respondent_id(value: str | None) -> bool:
+    """Whether `value` is exactly 5 digits -- required before a Survey
+    Taker submission is accepted, whether it's the generated default or
+    something the respondent typed over it."""
+    return bool(value) and value.isdigit() and len(value) == 5
 
 
 def draft_option_label(

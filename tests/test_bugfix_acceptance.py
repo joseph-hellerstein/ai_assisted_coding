@@ -53,7 +53,9 @@ async def run(errors):
 
         await page.goto(URL)
         await page.wait_for_selector("#main-tabs", timeout=5000)
-        await page.click("text=Survey Maker")
+        # Survey Maker is already the open tab on page load; clicking it
+        # here would toggle it *closed* now that a tab's button supports
+        # click-to-collapse (see app.py's toggle_active_tab).
         await page.wait_for_selector("#maker-title", timeout=5000)
 
         # --- Bug #1/#7 regression: typed question text/options must be
@@ -180,7 +182,17 @@ async def run(errors):
             await page.wait_for_selector("#taker-survey-select", timeout=5000)
             await page.click("#taker-survey-select")
             await page.wait_for_timeout(300)
-            await page.click(f"text={survey_title}")
+            # Pick the first genuinely visible match, not just the first
+            # DOM match: the (now hidden, but still mounted -- see app.py's
+            # toggle_active_tab) Maker tab's own status message repeats
+            # this same survey title, and a bare "text=" click would try
+            # that invisible element first and time out.
+            for candidate in await page.get_by_text(survey_title, exact=True).all():
+                if await candidate.is_visible():
+                    await candidate.click()
+                    break
+            else:
+                raise AssertionError(f"No visible match for survey title {survey_title!r}")
             await page.wait_for_timeout(500)
 
             taker_text_inputs = page.locator("#taker-survey-form textarea")

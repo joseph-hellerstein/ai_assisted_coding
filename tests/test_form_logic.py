@@ -1,6 +1,8 @@
 """Unit tests for the pure form-assembly helpers used by the Survey Maker
 and Survey Taker callbacks (src/form_logic.py)."""
 
+import random
+
 from form_logic import (  # type: ignore
     lines_to_list,
     list_to_lines,
@@ -13,8 +15,39 @@ from form_logic import (  # type: ignore
     answer_value_for_qid,
     draft_option_label,
     count_completed_questions,
+    generate_respondent_id,
+    is_valid_respondent_id,
 )
 from models import Question  # type: ignore
+
+
+def test_generate_respondent_id_is_five_digits():
+    rid = generate_respondent_id(rng=random.Random(1))
+    assert len(rid) == 5
+    assert rid.isdigit()
+
+
+def test_generate_respondent_id_zero_pads_small_numbers():
+    class _FakeRng:
+        def randint(self, a, b):
+            return 7
+
+    assert generate_respondent_id(rng=_FakeRng()) == "00007"
+
+
+def test_is_valid_respondent_id_accepts_exactly_five_digits():
+    assert is_valid_respondent_id("12345") is True
+
+
+def test_is_valid_respondent_id_rejects_wrong_length():
+    assert is_valid_respondent_id("1234") is False
+    assert is_valid_respondent_id("123456") is False
+
+
+def test_is_valid_respondent_id_rejects_non_digits():
+    assert is_valid_respondent_id("12a45") is False
+    assert is_valid_respondent_id("") is False
+    assert is_valid_respondent_id(None) is False
 
 
 def test_lines_to_list_splits_and_strips_blank_lines():

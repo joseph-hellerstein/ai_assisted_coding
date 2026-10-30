@@ -22,7 +22,7 @@ def test_save_survey_callback_captures_live_text_typed_into_the_form():
     app_module.list_surveys = lambda: []
     app_module.load_survey = lambda sid: None
 
-    status, options = app_module.save_survey_callback(
+    status, options, tab_label = app_module.save_survey_callback(
         1, "My Survey", "A description", None,
         ["text"], [{"type": "q-type", "qid": "q_1"}],
         ["What is your name?"], [["req"]], [""],
@@ -71,7 +71,7 @@ def test_save_survey_callback_reuses_existing_survey_id_when_editing():
 
 
 def test_save_survey_callback_requires_a_title():
-    status, options = app_module.save_survey_callback(
+    status, options, tab_label = app_module.save_survey_callback(
         1, "", "", None, [], [], [], [], [], [], [], [], [], [], [],
     )
     assert "title" in str(status).lower() or "⚠" in str(status)
@@ -123,12 +123,13 @@ def test_submit_survey_response_saves_answers_keyed_by_question_id():
         1, "srv_1",
         ["Yes", "Great answer"],
         [{"type": "answer", "qid": "q_1"}, {"type": "answer", "qid": "q_2"}],
-        None,
+        None, "12345",
     )
 
     resp = captured["response"]
     assert resp.survey_id == "srv_1"
     assert resp.answers == {"q_1": "Yes", "q_2": "Great answer"}
+    assert resp.respondent_id == "12345"
     assert "recorded" in str(status).lower() or "✅" in str(status)
 
 
@@ -140,7 +141,7 @@ def test_submit_survey_response_splits_matrix_composite_answers():
         1, "srv_1",
         ["Good"],
         [{"type": "answer", "qid": "q_9::Speed"}],
-        None,
+        None, "12345",
     )
 
     assert captured["response"].answers == {"q_9_matrix_Speed": "Good"}
@@ -150,9 +151,21 @@ def test_submit_survey_response_without_survey_selected_does_not_save():
     saved = []
     app_module.save_response = lambda response: saved.append(response)
 
-    app_module.submit_survey_response(1, None, [], [], None)
+    app_module.submit_survey_response(1, None, [], [], None, "12345")
 
     assert saved == []
+
+
+def test_submit_survey_response_rejects_an_invalid_respondent_id():
+    saved = []
+    app_module.save_response = lambda response: saved.append(response)
+
+    status, *_ = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None, "12ab",
+    )
+
+    assert saved == []
+    assert "5 digits" in str(status) or "⚠" in str(status)
 
 
 def test_submit_survey_response_deletes_the_resumed_draft_after_saving():
@@ -163,9 +176,11 @@ def test_submit_survey_response_deletes_the_resumed_draft_after_saving():
     )
     app_module.list_drafts = lambda survey_id: []
     app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
+    app_module.list_surveys = lambda: []
+    app_module.load_responses = lambda sid: []
 
-    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
-        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
     assert deleted == {"survey_id": "srv_1", "draft_id": "draft_1"}
@@ -181,9 +196,11 @@ def test_submit_survey_response_keeps_the_section_visible_if_other_drafts_remain
         {"id": "draft_other", "label": "", "saved_at": "2026-10-20T09:00:00"}
     ]
     app_module.load_survey = lambda sid: Survey(id=sid, title="T", questions=[])
+    app_module.list_surveys = lambda: []
+    app_module.load_responses = lambda sid: []
 
-    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
-        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
     assert section_style.get("display") == "block"
@@ -196,7 +213,7 @@ def test_submit_survey_response_without_a_resumed_draft_does_not_touch_drafts():
     )
 
     app_module.submit_survey_response(
-        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None,
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None, "12345",
     )
 
 
@@ -210,53 +227,90 @@ def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
     saved = []
     app_module.save_response = lambda response: saved.append(response)
 
-    status, current_draft_id, section_style, tab_label = app_module.submit_survey_response(
-        0, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1",
+    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+        0, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
     assert saved == []
     assert status is app_module.no_update
     assert current_draft_id is app_module.no_update
     assert section_style is app_module.no_update
-    assert tab_label is app_module.no_update
+    assert taker_label is app_module.no_update
+    assert analyzer_label is app_module.no_update
 
 
-def test_taker_tab_label_shows_no_current_draft_when_nothing_qualifies():
-    app_module.get_draft_info = lambda survey_id: ("", 0, 0, 0)
+def test_taker_tab_label_lists_drafts_for_every_survey():
+    # Regression guard for the actual bug report: generating/saving a
+    # draft for ANY survey must show up here, not just whichever survey
+    # happens to be selected in the Taker's own dropdown right now.
+    app_module.list_surveys = lambda: [
+        {"id": "srv_1", "title": "Alpha"},
+        {"id": "srv_2", "title": "Beta"},
+    ]
+    app_module.get_draft_info = lambda sid: (
+        {"srv_1": ("Alpha", 2, 5, 1), "srv_2": ("", 0, 0, 0)}[sid]
+    )
 
-    label = app_module._taker_tab_label(None)
+    label = app_module._taker_tab_label()
 
-    assert label.title == "No current draft"
-
-
-def test_taker_tab_label_shows_progress_for_the_selected_surveys_draft():
-    app_module.get_draft_info = lambda survey_id: ("My Survey", 2, 5, 1)
-
-    label = app_module._taker_tab_label("srv_1")
-
-    assert label.title == "My Survey: 2/5 answered"
-
-
-def test_taker_tab_label_mentions_extra_drafts_when_more_than_one_exists():
-    app_module.get_draft_info = lambda survey_id: ("My Survey", 2, 5, 3)
-
-    label = app_module._taker_tab_label("srv_1")
-
-    assert "3 drafts saved" in label.title
+    assert "Alpha" in label and "2/5 answered" in label
+    assert "Beta" in label and "no drafts" in label
 
 
-def test_refresh_taker_tab_hover_delegates_to_the_currently_selected_survey():
-    # Regression guard for the actual bug report: this must be keyed off
-    # whichever survey is selected in the Taker's own dropdown right now,
-    # not computed once when the server process started (which is why the
-    # old version could show a draft that had since been deleted, or miss
-    # one that had since been created).
-    seen = []
-    app_module.get_draft_info = lambda survey_id: seen.append(survey_id) or ("", 0, 0, 0)
+def test_taker_tab_label_mentions_how_many_drafts_a_survey_has():
+    app_module.list_surveys = lambda: [{"id": "srv_1", "title": "Alpha"}]
+    app_module.get_draft_info = lambda sid: ("Alpha", 2, 5, 3)
 
-    app_module.refresh_taker_tab_hover("tab-taker", "srv_42")
+    label = app_module._taker_tab_label()
 
-    assert seen == ["srv_42"]
+    assert "3 drafts" in label
+
+
+def test_taker_tab_label_shows_placeholder_when_no_surveys_exist():
+    app_module.list_surveys = lambda: []
+
+    label = app_module._taker_tab_label()
+
+    assert "No surveys yet" in label
+
+
+def test_refresh_taker_tab_hover_reflects_every_survey():
+    app_module.list_surveys = lambda: [{"id": "srv_1", "title": "Fresh Survey"}]
+    app_module.get_draft_info = lambda sid: ("", 0, 0, 0)
+
+    label = app_module.refresh_taker_tab_hover("tab-taker")
+
+    assert "Fresh Survey" in label
+
+
+def test_analyzer_tab_label_lists_response_counts_for_every_survey():
+    app_module.list_surveys = lambda: [
+        {"id": "srv_1", "title": "Alpha"},
+        {"id": "srv_2", "title": "Beta"},
+    ]
+    app_module.load_responses = lambda sid: ({"srv_1": [1, 2, 3], "srv_2": []}[sid])
+
+    label = app_module._analyzer_tab_label()
+
+    assert "Alpha" in label and "3 responses" in label
+    assert "Beta" in label and "0 responses" in label
+
+
+def test_analyzer_tab_label_shows_placeholder_when_no_surveys_exist():
+    app_module.list_surveys = lambda: []
+
+    label = app_module._analyzer_tab_label()
+
+    assert "No surveys yet" in label
+
+
+def test_refresh_analyzer_tab_hover_reflects_every_survey():
+    app_module.list_surveys = lambda: [{"id": "srv_1", "title": "Fresh Survey"}]
+    app_module.load_responses = lambda sid: []
+
+    label = app_module.refresh_analyzer_tab_hover("tab-analyzer")
+
+    assert "Fresh Survey" in label
 
 
 def test_refresh_draft_list_hides_the_section_when_the_survey_has_no_drafts():
@@ -328,20 +382,23 @@ def test_perform_delete_survey_resets_the_editor_form():
     app_module.delete_survey = lambda sid: None
     app_module.list_surveys = lambda: []
 
-    status, options, title, description, questions, select_value = \
+    status, options, title, description, questions, select_value, editor_style, maker_label, taker_label, analyzer_label = \
         app_module.perform_delete_survey(1, "srv_1")
 
     assert title == ""
     assert description == ""
     assert questions == []
     assert select_value is None
+    assert editor_style.get("display") == "none"
 
 
 def test_perform_delete_survey_refreshes_dropdown_excluding_deleted_survey():
     app_module.delete_survey = lambda sid: None
     app_module.list_surveys = lambda: [{"title": "Remaining Survey", "id": "srv_2"}]
+    app_module.get_draft_info = lambda sid: ("", 0, 0, 0)
+    app_module.load_responses = lambda sid: []
 
-    status, options, title, description, questions, select_value = \
+    status, options, title, description, questions, select_value, editor_style, maker_label, taker_label, analyzer_label = \
         app_module.perform_delete_survey(1, "srv_1")
 
     assert options == [{"label": "Remaining Survey", "value": "srv_2"}]
@@ -356,13 +413,14 @@ def test_save_draft_callback_saves_live_answers_and_generates_a_new_draft_id():
 
     status, options, select_value, current_draft_id, section_style, tab_label = app_module.save_draft_callback(
         1, "srv_1", "My label", None,
-        ["Yes"], [{"type": "answer", "qid": "q_1"}],
+        ["Yes"], [{"type": "answer", "qid": "q_1"}], "12345",
     )
 
     draft = captured["draft"]
     assert draft.survey_id == "srv_1"
     assert draft.label == "My label"
     assert draft.answers == {"q_1": "Yes"}
+    assert draft.respondent_id == "12345"
     # select_value is deliberately left as no_update: writing it would be an
     # Input to show_survey, which would immediately rebuild the form and
     # wipe this very status message.
@@ -384,8 +442,8 @@ def test_save_draft_callback_creates_a_separate_draft_each_time_nothing_was_resu
     app_module.save_draft = lambda draft: saved_ids.append(draft.id)
     app_module.list_drafts = lambda survey_id: []
 
-    app_module.save_draft_callback(1, "srv_1", "", None, ["Yes"], [{"type": "answer", "qid": "q_1"}])
-    app_module.save_draft_callback(1, "srv_1", "", None, ["No"], [{"type": "answer", "qid": "q_1"}])
+    app_module.save_draft_callback(1, "srv_1", "", None, ["Yes"], [{"type": "answer", "qid": "q_1"}], "12345")
+    app_module.save_draft_callback(1, "srv_1", "", None, ["No"], [{"type": "answer", "qid": "q_1"}], "12345")
 
     assert len(saved_ids) == 2
     assert saved_ids[0] != saved_ids[1]
@@ -398,7 +456,7 @@ def test_save_draft_callback_reuses_the_current_draft_id_instead_of_duplicating(
 
     app_module.save_draft_callback(
         1, "srv_1", "", "draft_existing",
-        ["Yes"], [{"type": "answer", "qid": "q_1"}],
+        ["Yes"], [{"type": "answer", "qid": "q_1"}], "12345",
     )
 
     assert captured["draft"].id == "draft_existing"
@@ -409,11 +467,29 @@ def test_save_draft_callback_without_survey_selected_shows_warning_and_does_not_
     app_module.save_draft = lambda draft: saved.append(draft)
 
     status, options, select_value, current_draft_id, section_style, tab_label = app_module.save_draft_callback(
-        1, None, "", None, [], [],
+        1, None, "", None, [], [], "12345",
     )
 
     assert saved == []
     assert "⚠" in str(status) or "select" in str(status).lower()
+
+
+def test_take_another_survey_clears_the_survey_dropdown_and_hides_the_thank_you_screen():
+    # The thank-you screen used to be a dead end: clearing the dropdown is
+    # what actually resets everything downstream, since it's show_survey's
+    # own Input.
+    select_value, form_style, thankyou_style = app_module.take_another_survey(1)
+
+    assert select_value is None
+    assert thankyou_style.get("display") == "none"
+
+
+def test_take_another_survey_ignores_the_spurious_zero_click_mount_event():
+    select_value, form_style, thankyou_style = app_module.take_another_survey(0)
+
+    assert select_value is app_module.no_update
+    assert form_style is app_module.no_update
+    assert thankyou_style is app_module.no_update
 
 
 def test_submit_callback_is_registered_statically_at_import_time():
@@ -522,6 +598,7 @@ def test_delete_response_row_persists_deletion_and_refreshes_summary():
         "S", (), {"title": "My Survey", "questions": []}
     )()
     app_module.load_responses = lambda sid: []
+    app_module.list_surveys = lambda: []
 
     data_previous = [
         {"Response ID": "resp_1", "Submitted At": "t1"},
@@ -529,7 +606,7 @@ def test_delete_response_row_persists_deletion_and_refreshes_summary():
     ]
     data = [{"Response ID": "resp_1", "Submitted At": "t1"}]
 
-    response_count, charts = app_module.delete_response_row(data, data_previous, "srv_1")
+    response_count, charts, analyzer_label = app_module.delete_response_row(data, data_previous, "srv_1")
 
     assert deleted == {"response_id": "resp_2", "survey_id": "srv_1"}
     assert "My Survey" in str(response_count)
@@ -563,3 +640,141 @@ def test_delete_response_row_ignores_changes_that_are_not_a_single_row_removal()
     app_module.delete_response_row(data, data_previous, "srv_1")
 
     assert called == []
+
+
+def test_toggle_test_panel_opens_when_currently_hidden():
+    style = app_module.toggle_test_panel(1, {"display": "none"})
+
+    assert style["display"] == "block"
+
+
+def test_toggle_test_panel_closes_when_currently_open():
+    style = app_module.toggle_test_panel(1, {"display": "block"})
+
+    assert style["display"] == "none"
+
+
+def test_generate_test_data_creates_a_survey_and_the_requested_responses():
+    captured = {}
+    app_module.sample_data.save_survey = lambda survey: captured.__setitem__("survey", survey)
+    saved_responses = []
+    saved_drafts = []
+    app_module.sample_data.save_response = lambda r: saved_responses.append(r)
+    app_module.sample_data.save_draft = lambda d: saved_drafts.append(d)
+    app_module.list_surveys = lambda: []
+
+    status, maker_label, taker_label, analyzer_label = app_module.generate_test_data(1, 3, 2)
+
+    assert len(saved_responses) == 3
+    assert len(saved_drafts) == 2
+    assert "✅" in str(status)
+
+
+def test_generate_test_data_rejects_negative_counts():
+    status = app_module.generate_test_data(1, -1, 0)
+
+    assert "⚠" in str(status)
+
+
+def test_generate_test_data_rejects_non_numeric_counts():
+    status = app_module.generate_test_data(1, "abc", 0)
+
+    assert "⚠" in str(status)
+
+
+def test_delete_all_test_data_reports_how_many_surveys_were_removed():
+    app_module.sample_data.list_surveys = lambda: [
+        {"id": "srv_rand_1", "title": "Random 1"},
+        {"id": "srv_real_1", "title": "Real survey"},
+    ]
+    app_module.sample_data.list_drafts = lambda sid: []
+    app_module.sample_data.delete_survey = lambda sid: None
+    app_module.list_surveys = lambda: []
+
+    status, maker_label, taker_label, analyzer_label = app_module.delete_all_test_data(1)
+
+    assert "1" in str(status)
+
+
+def test_maker_tab_label_lists_every_saved_survey():
+    app_module.list_surveys = lambda: [{"title": "Alpha"}, {"title": "Beta"}]
+
+    label = app_module._maker_tab_label()
+
+    assert "Alpha" in label
+    assert "Beta" in label
+
+
+def test_maker_tab_label_shows_placeholder_when_no_surveys_exist():
+    app_module.list_surveys = lambda: []
+
+    label = app_module._maker_tab_label()
+
+    assert "No surveys yet" in label
+
+
+def test_refresh_maker_tab_hover_reflects_current_survey_list():
+    app_module.list_surveys = lambda: [{"title": "Fresh Survey"}]
+
+    label = app_module.refresh_maker_tab_hover("tab-maker")
+
+    assert "Fresh Survey" in label
+
+
+def test_generate_test_data_refreshes_all_three_tab_hovers():
+    app_module.sample_data.save_survey = lambda survey: None
+    app_module.sample_data.save_response = lambda r: None
+    app_module.sample_data.save_draft = lambda d: None
+    app_module.list_surveys = lambda: [{"title": "Newly Generated", "id": "srv_1"}]
+    app_module.get_draft_info = lambda sid: ("", 0, 0, 0)
+    app_module.load_responses = lambda sid: []
+
+    status, maker_label, taker_label, analyzer_label = app_module.generate_test_data(1, 0, 0)
+
+    assert "Newly Generated" in maker_label
+    assert "Newly Generated" in taker_label
+    assert "Newly Generated" in analyzer_label
+
+
+def test_delete_all_test_data_refreshes_all_three_tab_hovers():
+    app_module.sample_data.list_surveys = lambda: []
+    app_module.sample_data.list_drafts = lambda sid: []
+    app_module.sample_data.delete_survey = lambda sid: None
+    app_module.list_surveys = lambda: [{"title": "Still Here", "id": "srv_2"}]
+    app_module.get_draft_info = lambda sid: ("", 0, 0, 0)
+    app_module.load_responses = lambda sid: []
+
+    status, maker_label, taker_label, analyzer_label = app_module.delete_all_test_data(1)
+
+    assert "Still Here" in maker_label
+    assert "Still Here" in taker_label
+    assert "Still Here" in analyzer_label
+
+
+def test_render_active_tab_highlights_the_active_button_and_shows_its_content():
+    maker_style, taker_style, analyzer_style, maker_content, taker_content, analyzer_content = \
+        app_module.render_active_tab(app_module.TAB_TAKER)
+
+    assert taker_style["borderBottom"] != "3px solid transparent"
+    assert maker_style["borderBottom"] == "3px solid transparent"
+    assert analyzer_style["borderBottom"] == "3px solid transparent"
+
+    assert taker_content["display"] == "block"
+    assert maker_content["display"] == "none"
+    assert analyzer_content["display"] == "none"
+
+
+def test_render_active_tab_shows_nothing_when_collapsed():
+    _, _, _, maker_content, taker_content, analyzer_content = app_module.render_active_tab(None)
+
+    assert maker_content["display"] == "none"
+    assert taker_content["display"] == "none"
+    assert analyzer_content["display"] == "none"
+
+
+# toggle_active_tab itself isn't direct-call-tested here: it reads
+# dash.callback_context.triggered to tell which button fired, and that's
+# only available inside a real Dash request (calling it directly raises
+# MissingCallbackContextException) -- same situation as show_survey
+# elsewhere in this file. Its click-driven toggle/collapse behavior is
+# covered by the Playwright acceptance check instead.

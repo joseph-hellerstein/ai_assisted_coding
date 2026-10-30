@@ -1,12 +1,12 @@
 """SurveyMaker component - Build surveys by defining questions and answer types."""
 from __future__ import annotations
 
-import constants as cn  # type: ignore
+import src.constants as cn  # type: ignore
 
 from dash import dcc, html  # type: ignore
 
-from models import Question  #  type: ignore
-from form_logic import list_to_lines, type_visibility, section_style  # type: ignore
+from src.models import Question  #  type: ignore
+from src.form_logic import list_to_lines, type_visibility, section_style  # type: ignore
 
 
 QUESTION_TYPE_LABELS = {
@@ -200,61 +200,67 @@ def survey_maker_layout():
             message="",
         ),
 
-        # Survey metadata
+        # Title/description/questions/save-survey widgets, hidden until an
+        # existing survey is selected or "Create New Survey" is clicked (see
+        # load_or_new_survey in app.py, which reveals this section) -- there's
+        # nothing useful to edit before that choice is made.
         html.Div([
-            html.Label("Survey Title:"),
-            dcc.Input(
-                id="maker-title",
-                type="text",
-                placeholder="Enter survey title...",
-                style={"width": "100%", "padding": "8px", "marginBottom": "10px"},
-            ),
-            html.Label("Description:"),
-            dcc.Textarea(
-                id="maker-description",
-                value="",
-                rows=3,
-                placeholder="Enter survey description...",
-                style={"width": "100%", "padding": "8px", "marginBottom": "15px"},
-            ),
-        ], style={"maxWidth": "600px", "margin": "0 auto 20px auto"}),
+            # Survey metadata
+            html.Div([
+                html.Label("Survey Title:"),
+                dcc.Input(
+                    id="maker-title",
+                    type="text",
+                    placeholder="Enter survey title...",
+                    style={"width": "100%", "padding": "8px", "marginBottom": "10px"},
+                ),
+                html.Label("Description:"),
+                dcc.Textarea(
+                    id="maker-description",
+                    value="",
+                    rows=3,
+                    placeholder="Enter survey description...",
+                    style={"width": "100%", "padding": "8px", "marginBottom": "15px"},
+                ),
+            ], style={"maxWidth": "600px", "margin": "0 auto 20px auto"}),
 
-        # Questions container — populated by the load/add/delete question callbacks
-        html.Div(id="maker-questions-container"),
+            # Questions container — populated by the load/add/delete question callbacks
+            html.Div(id="maker-questions-container"),
 
-        # Action buttons
-        html.Div([
-            html.Button(
-                "+ Add Question",
-                id="maker-add-question",
-                n_clicks=0,
-                style={
-                    "padding": "10px 20px",
-                    "backgroundColor": "#4CAF50",
-                    "color": "white",
-                    "border": "none",
-                    "borderRadius": "4px",
-                    "cursor": "pointer",
-                    "fontSize": "16px",
-                    "marginRight": "10px",
-                },
-            ),
-            html.Button(
-                "\U0001f4be Save Survey",
-                id=cn.L_MAKER_SAVE_SURVEY,
-                n_clicks=0,
-                style={
-                    "padding": "10px 20px",
-                    "backgroundColor": "#2196F3",
-                    "color": "white",
-                    "border": "none",
-                    "borderRadius": "4px",
-                    "cursor": "pointer",
-                    "fontSize": "16px",
-                    "marginRight": "10px",
-                },
-            ),
-        ], style={"textAlign": "center", "marginTop": "20px"}),
+            # Action buttons
+            html.Div([
+                html.Button(
+                    "+ Add Question",
+                    id="maker-add-question",
+                    n_clicks=0,
+                    style={
+                        "padding": "10px 20px",
+                        "backgroundColor": "#4CAF50",
+                        "color": "white",
+                        "border": "none",
+                        "borderRadius": "4px",
+                        "cursor": "pointer",
+                        "fontSize": "16px",
+                        "marginRight": "10px",
+                    },
+                ),
+                html.Button(
+                    "\U0001f4be Save Survey",
+                    id=cn.L_MAKER_SAVE_SURVEY,
+                    n_clicks=0,
+                    style={
+                        "padding": "10px 20px",
+                        "backgroundColor": "#2196F3",
+                        "color": "white",
+                        "border": "none",
+                        "borderRadius": "4px",
+                        "cursor": "pointer",
+                        "fontSize": "16px",
+                        "marginRight": "10px",
+                    },
+                ),
+            ], style={"textAlign": "center", "marginTop": "20px"}),
+        ], id=cn.L_MAKER_EDITOR_SECTION, style={"display": "none"}),
 
         # Status message
         html.Div(id="maker-status", style={

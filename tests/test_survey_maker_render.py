@@ -107,6 +107,16 @@ def test_survey_maker_layout_has_a_confirm_dialog_for_deletion():
     assert type(dialog).__name__ == "ConfirmDialog"
 
 
+def test_survey_maker_layout_hides_the_editor_section_until_a_survey_is_chosen():
+    # The title/description/questions/save-survey widgets shouldn't appear
+    # until an existing survey is selected or "Create New Survey" is
+    # clicked (see load_or_new_survey in app.py, which reveals this section).
+    layout = survey_maker_layout()
+    ids = _collect_by_id(layout)
+    assert "maker-editor-section" in ids
+    assert ids["maker-editor-section"].style.get("display") == "none"
+
+
 def test_render_question_editor_matrix_rows_cols_prefilled_as_lines():
     q = Question(id="q_m", type="matrix", text="",
                  matrix_rows=["Speed", "Quality"], matrix_cols=["Poor", "Good"])

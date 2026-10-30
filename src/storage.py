@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from models import Survey, Response, Draft  # type: ignore
-from form_logic import count_completed_questions  # type: ignore
+from src.models import Survey, Response, Draft  # type: ignore
+from src.form_logic import count_completed_questions  # type: ignore
 
 
 # Base directory relative to this file

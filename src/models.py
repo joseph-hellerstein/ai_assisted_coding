@@ -65,6 +65,7 @@ class Response:
     survey_id: str
     submitted_at: str
     answers: dict[str, Any] = field(default_factory=dict)  # question_id -> answer
+    respondent_id: str = ""  # 5-digit id the taker entered/kept, not the internal id above
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -82,6 +83,7 @@ class Draft:
     label: str
     saved_at: str
     answers: dict[str, Any] = field(default_factory=dict)  # question_id -> answer
+    respondent_id: str = ""  # carried through to the Response if/when submitted
 
     def to_dict(self) -> dict:
         return asdict(self)

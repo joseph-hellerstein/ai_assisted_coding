@@ -38,10 +38,9 @@ This document provides brief descriptions of the content of epsidoes (a teaching
       1. Prompts, tokens, context
       2. Set up in VSCode
       3. ``git`` best practices (e.g., separate branch; use diff)
-   2. (A2) Code review use case - Add Survey Taker status hovers
-      1. Have existing code for status cover for Survey Maker
-      2. Replicate the same technique for Survey Taker using ``load_drafts()`` by reporting how many questions completed.
-      3. Prompt "Please review my implementation of the hover for Survey Taker"
+   2. Coding task - Check for duplicate survey taker ID
+      1. Where in code this is done
+      2. How the system responds
 
 4. AI-Assisted implementation of unit tests
    1. What is a test?
@@ -54,7 +53,7 @@ This document provides brief descriptions of the content of epsidoes (a teaching
 
 5. Assisted small feature implementation
    1. Scope: function/method or small refactor
-   2. Example: Create a plot in Survey Analyzer showing the CDF of survey responses.
+   2. Example: Check if a response duplicates an existing ID.
    3. Use case 1: Complete a partial implementation
       1. Implementation may have comments in sections and errors in others.
    4. Use case 2: AI creates from scratch
@@ -79,6 +78,6 @@ This document provides brief descriptions of the content of epsidoes (a teaching
    2. Refactoring
    3. Sustainability
 
-9. Course review
+9.  Course review
    1. Summary
    2. What's next: Skills, Agents

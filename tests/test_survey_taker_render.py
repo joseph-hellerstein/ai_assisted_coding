@@ -7,7 +7,7 @@ render one input per row, keyed by the composite qid "{question_id}::{row}".
 """
 
 from models import Question, Survey  # type: ignore
-from survey_taker import _render_question_input, render_survey_taker  # type: ignore
+from survey_taker import _render_question_input, render_survey_taker, survey_taker_layout  # type: ignore
 
 
 def _collect_ids(component, out=None):
@@ -115,3 +115,41 @@ def test_render_survey_taker_embeds_a_status_message_into_its_own_status_div():
 
     status_div = _find_by_id(form, "taker-status")
     assert status_div.children == "Draft deleted."
+
+
+def test_render_survey_taker_prefills_a_random_five_digit_respondent_id_by_default():
+    survey = Survey(id="srv_1", title="T", questions=[])
+
+    form = render_survey_taker(survey)
+
+    field = _find_by_id(form, "taker-respondent-id")
+    assert field is not None
+    assert len(field.value) == 5
+    assert field.value.isdigit()
+
+
+def test_render_survey_taker_uses_the_given_respondent_id_when_provided():
+    survey = Survey(id="srv_1", title="T", questions=[])
+
+    form = render_survey_taker(survey, initial_respondent_id="54321")
+
+    field = _find_by_id(form, "taker-respondent-id")
+    assert field.value == "54321"
+
+
+def test_survey_taker_layout_has_a_take_another_survey_button_in_the_thank_you_screen():
+    # The thank-you screen used to be a dead end (an empty div) -- there was
+    # no way to take a second survey without switching tabs away and back.
+    layout = survey_taker_layout()
+    button = _find_by_id(layout, "taker-take-another")
+    assert button is not None
+
+
+def test_survey_taker_layout_hides_the_save_for_later_controls_until_a_survey_is_chosen():
+    # The "Save for Later" / "Delete This Draft" controls shouldn't appear
+    # until a survey is picked (see show_survey in app.py, which reveals
+    # this section).
+    layout = survey_taker_layout()
+    controls = _find_by_id(layout, "taker-draft-controls")
+    assert controls is not None
+    assert controls.style.get("display") == "none"

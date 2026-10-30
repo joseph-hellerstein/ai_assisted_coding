@@ -33,7 +33,9 @@ def survey_analyzer_layout():
         # Charts container
         html.Div(id="analyzer-charts"),
 
-        # Raw data table
+        # Raw data table, hidden until a survey is picked (see analyze_survey
+        # in app.py, which reveals this section) -- there's nothing to show
+        # before that choice is made.
         html.Div([
             html.H3("Raw Responses", style={"marginTop": "30px"}),
             dash_table.DataTable(
@@ -51,7 +53,7 @@ def survey_analyzer_layout():
                     "fontWeight": "bold",
                 },
             ),
-        ], style={"maxWidth": "1000px", "margin": "0 auto"}),
+        ], id="analyzer-table-section", style={"maxWidth": "1000px", "margin": "0 auto", "display": "none"}),
 
         dcc.Store(id="analyzer-responses-store"),
     ], style={"padding": "20px"})

@@ -45,7 +45,9 @@ async def run(errors):
 
         await page.goto(URL)
         await page.wait_for_selector("#main-tabs", timeout=5000)
-        await page.click("text=Survey Maker")
+        # Survey Maker is already the open tab on page load; clicking it
+        # here would toggle it *closed* now that a tab's button supports
+        # click-to-collapse (see app.py's toggle_active_tab).
         await page.wait_for_selector("#maker-title", timeout=5000)
 
         # --- Create and save a survey to delete. ---

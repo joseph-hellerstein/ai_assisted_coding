@@ -2,16 +2,21 @@
 
 from dash import dcc, html
 
-import constants as cn  # type: ignore
-from form_logic import answer_value_for_qid  # type: ignore
+import src.constants as cn  # type: ignore
+from src.form_logic import answer_value_for_qid, generate_respondent_id  # type: ignore
 
 
-def render_survey_taker(survey, initial_answers=None, status_message=None):
+def render_survey_taker(survey, initial_answers=None, status_message=None, initial_respondent_id=None):
     """Render the form for taking a survey.
 
     `initial_answers` (a Draft's saved answers dict, keyed the same way as
     Response.answers) prefills every input when resuming a saved draft;
     omit it to render a blank form.
+
+    `initial_respondent_id` prefills the respondent-id field -- pass a
+    draft's saved respondent_id when resuming one; omit it (or pass a
+    falsy value) to have a fresh random 5-digit id generated, the default
+    for a brand new form. Either way the respondent can overwrite it.
 
     `status_message` seeds the form's own "taker-status" div. A caller
     that rebuilds this whole form can't *also* target that nested div with
@@ -42,6 +47,16 @@ def render_survey_taker(survey, initial_answers=None, status_message=None):
     return html.Div([
         html.H2(survey.title, style={"textAlign": "center"}),
         html.P(survey.description, style={"textAlign": "center", "fontSize": "16px", "color": "#666"}),
+        html.Div([
+            html.Label("Your ID (5 digits):", style={"marginRight": "10px"}),
+            dcc.Input(
+                id=cn.L_TAKER_RESPONDENT_ID,
+                type="text",
+                value=initial_respondent_id or generate_respondent_id(),
+                maxLength=5,
+                style={"width": "80px"},
+            ),
+        ], style={"textAlign": "center", "marginTop": "10px"}),
         html.Hr(),
         html.Div(question_components, style={"maxWidth": "700px", "margin": "0 auto"}),
         html.Div([
@@ -225,7 +240,9 @@ def survey_taker_layout():
         # Survey form (shown when a survey is selected)
         html.Div(id="taker-survey-form"),
 
-        # Save-for-later controls
+        # Save-for-later controls, hidden until a survey is picked (see
+        # show_survey in app.py, which reveals this section) -- there's
+        # nothing to save or resume before that choice is made.
         html.Div([
             dcc.Input(
                 id=cn.L_TAKER_DRAFT_LABEL,
@@ -241,10 +258,31 @@ def survey_taker_layout():
                 n_clicks=0,
                 style={"marginLeft": "10px"},
             ),
-        ], style={"textAlign": "center", "marginTop": "10px"}),
+        ], id=cn.L_TAKER_DRAFT_CONTROLS, style={"textAlign": "center", "marginTop": "10px", "display": "none"}),
 
         dcc.Store(id=cn.L_TAKER_CURRENT_DRAFT_STORE, data=None),
 
-        # Thank you message
-        html.Div(id="taker-thankyou", style={"display": "none"}),
+        # Thank you message, with a way back to picking another survey --
+        # otherwise this screen was a dead end: switching tabs away and back
+        # was the only way to take a second survey (see take_another_survey
+        # in app.py, which resets the survey dropdown and this screen).
+        html.Div([
+            html.H3("✅ Thank you for your response!", style={"textAlign": "center"}),
+            html.Div([
+                html.Button(
+                    "Take Another Survey",
+                    id=cn.L_TAKER_TAKE_ANOTHER,
+                    n_clicks=0,
+                    style={
+                        "padding": "12px 30px",
+                        "backgroundColor": "#4CAF50",
+                        "color": "white",
+                        "border": "none",
+                        "borderRadius": "4px",
+                        "cursor": "pointer",
+                        "fontSize": "16px",
+                    },
+                ),
+            ], style={"textAlign": "center", "marginTop": "20px"}),
+        ], id="taker-thankyou", style={"display": "none"}),
     ], style={"padding": "20px"})

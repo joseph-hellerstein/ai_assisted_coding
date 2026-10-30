@@ -5,9 +5,8 @@ the same way tests/test_app_callbacks.py monkeypatches app.py's, so no real
 storage is touched.
 """
 
-import tests.thelpers as thelpers  # type: ignore
-import src.shelpers as shelpers  # type: ignore
-from src.models import Survey  # type: ignore
+import shelpers  # type: ignore
+from models import Survey  # type: ignore
 
 
 def test_get_draft_info_returns_blank_when_no_survey_selected():

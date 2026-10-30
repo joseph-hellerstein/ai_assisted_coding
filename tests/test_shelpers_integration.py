@@ -11,7 +11,7 @@ import src.shelpers as shelpers  # type: ignore
 import src.storage as storage  # type: ignore
 from src.models import Draft  # type: ignore
 
-from thelpers import ( # type: ignore
+from tests.thelpers import ( # type: ignore
     create_completed_responses,
     create_drafts,
     create_surveys,

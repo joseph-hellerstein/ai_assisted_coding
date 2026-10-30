@@ -1,7 +1,31 @@
 """Tests for chart generation in src/survey_analyzer.py."""
 
 from models import Question, Response # type: ignore
-from survey_analyzer import _generate_question_chart  # type: ignore
+from survey_analyzer import _generate_question_chart, survey_analyzer_layout  # type: ignore
+
+
+def _collect_by_id(component, out=None):
+    if out is None:
+        out = {}
+    cid = getattr(component, "id", None)
+    if cid is not None:
+        out[cid] = component
+    children = getattr(component, "children", None)
+    if isinstance(children, (list, tuple)):
+        for c in children:
+            _collect_by_id(c, out)
+    elif children is not None and (hasattr(children, "id") or hasattr(children, "children")):
+        _collect_by_id(children, out)
+    return out
+
+
+def test_survey_analyzer_layout_hides_the_raw_responses_table_until_a_survey_is_chosen():
+    # The "Raw Responses" table shouldn't appear until a survey is picked
+    # (see analyze_survey in app.py, which reveals this section).
+    layout = survey_analyzer_layout()
+    ids = _collect_by_id(layout)
+    assert "analyzer-table-section" in ids
+    assert ids["analyzer-table-section"].style.get("display") == "none"
 
 
 def _bar_values_by_label(fig):
