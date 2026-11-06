@@ -1,0 +1,67 @@
+<h1>Episode 2: Running Example</h1>
+<p><strong>Duration:</strong> ~60 minutes
+<strong>Learning objective covered:</strong> Use AI to understand the structure of an application — (a) how control flow relates to GUI interactions, (b) key data structures, (c) accessing and manipulating application data.
+<strong>Prerequisites:</strong> Students have Dash installed and have already written a one-page &quot;Hello World&quot; Dash app (pre-course requirement). They have read <code>course_materials/dash_programming.md</code> before class.
+<strong>Materials:</strong> The Survey Manager starter repo (<code>src/app.py</code>, <code>models.py</code>, <code>storage.py</code>, <code>survey_maker.py</code>, <code>survey_taker.py</code>, <code>survey_analyzer.py</code>, <code>form_logic.py</code>, <code>constants.py</code>), <code>docs/data-model.md</code> (kept hidden from students until the check-your-work step in 2.6), <code>course_materials/specifications/task_status_hovers.md</code>.</p>
+<p>By the end of this episode, students will have (1) traced one GUI interaction all the way to stored data, (2) produced their own diagram of the app's data model and checked it against the real one, (3) written a short script that reads survey data directly, and (4) shipped one small, real feature (the Survey Maker hover) using that understanding.</p>
+<p>Everything in this episode is <strong>exploration and one small build</strong>, not a feature of real scope — that's episodes 5 onward. The point here is to leave with an accurate mental model of the codebase before changing it.</p>
+<hr />
+<h2>2.1 Description of the Survey Manager (5 min)</h2>
+<p>Walk through the three tabs live (don't just describe them) — Survey Maker, Survey Taker, Survey Analyzer — using <code>README.md</code>'s screenshots or the running app. Ask students to notice, without reading code yet: what data must exist for each tab to work? (A survey definition; a submitted response; a partial response.) This primes 2.6 — they'll check their guess against the AI's answer later.</p>
+<h2>2.2–2.4 Dash, widgets, HTML, layout (10 min)</h2>
+<p>This is review, not new material — students read <code>dash_programming.md</code> and already built a Hello World app. Spend this block on:</p>
+<ul>
+<li>A 5-minute live walkthrough of <code>src/app.py</code>'s <code>app.layout</code> tree, pointing out the three tab buttons and their content <code>html.Div</code>s, and the &quot;widget namespace&quot; idea (every id is how Python code and the browser DOM refer to the same thing).</li>
+<li>One quick comprehension check: &quot;Find the <code>id</code> of the Survey Title input box in <code>survey_maker.py</code>. What would you pass as <code>Output(&quot;maker-title&quot;, ...)</code> if you wanted to write to it?&quot; (Answer: <code>Output(&quot;maker-title&quot;, &quot;value&quot;)</code>.)</li>
+</ul>
+<p>Don't over-invest here — if the room is solid on Hello World, move faster.</p>
+<h2>2.5 Callbacks, and (a) control flow ↔ GUI interactions (15 min)</h2>
+<p><strong>Concept (5 min):</strong> Review <code>Input</code>/<code>Output</code>/<code>State</code> from <code>dash_programming.md</code> directly against a real callback — <code>save_survey_callback</code> in <code>app.py</code> is a good pick: multiple <code>State</code>s (the live form), one <code>Input</code> (the Save button), several <code>Output</code>s (status message, dropdown options, tab hover).</p>
+<p><strong>Activity (10 min) — AI-assisted trace, then verify by running it:</strong></p>
+<p>Each student picks one interaction (assign different ones around the room so answers can be compared):</p>
+<ul>
+<li>Clicking &quot;Save Survey&quot; in Survey Maker</li>
+<li>Clicking &quot;Submit Survey&quot; in Survey Taker</li>
+<li>Switching from Survey Maker to Survey Taker (same tab clicked twice)</li>
+</ul>
+<p><strong>Prompt to give the AI</strong> (adapt the bracketed interaction):</p>
+<blockquote>
+<p>I'm learning this codebase. When I [click &quot;Save Survey&quot; in the Survey Maker tab], trace exactly what happens: which <code>@callback</code> in <code>src/app.py</code> fires, what its <code>Input</code>/<code>State</code>/<code>Output</code>s are, and which helper functions in <code>form_logic.py</code> or <code>storage.py</code> it calls before anything is written to disk. List the steps in order; don't skip any.</p>
+</blockquote>
+<p><strong>Then verify, don't just trust it:</strong> run the app, perform the real interaction, and check the AI's trace step by step. Two places this app will catch a lazy trace:</p>
+<ul>
+<li>A callback's multiple <code>Output</code>s are applied in <strong>declaration order</strong> — a later one can silently overwrite an earlier one targeting a nested element. (<code>save_draft_callback</code>'s docstring in <code>app.py</code> explains a real case of this.)</li>
+<li>A dynamically-recreated component's callback can fire once at <code>n_clicks=0</code> the moment it mounts, before any real click — <code>submit_survey_response</code>'s <code>if not n_clicks</code> guard exists because of this.</li>
+</ul>
+<p>If the AI's trace doesn't mention these where relevant, that's the teaching moment: <strong>an AI's architectural explanation is a hypothesis to test by running the code, not a fact to relay.</strong></p>
+<p><strong>Deliverable:</strong> a short sequence diagram (mermaid, or even a numbered list) of the chosen interaction, annotated with any place the live behavior differed from the AI's first answer.</p>
+<h2>2.6 Information model — (b) key data structures and (c) accessing/manipulating data (20 min)</h2>
+<p><strong>(b) Key data structures (12 min).</strong></p>
+<p><strong>Prompt:</strong></p>
+<blockquote>
+<p>Looking at <code>src/models.py</code> and the functions in <code>src/storage.py</code>, diagram the relationship between <code>Survey</code>, <code>Question</code>, <code>Response</code>, and <code>Draft</code>. Show which fields exist on each, and how <code>survey_id</code> connects a <code>Response</code>/<code>Draft</code> back to its <code>Survey</code>. Then explain: why isn't <code>Question</code> stored in its own file the way <code>Survey</code> is?</p>
+</blockquote>
+<p>Students produce their own diagram first (5 min), <em>then</em> compare it against <code>docs/data-model.md</code> (6 min, now revealed) — which the instructor built the same way. Discuss any mismatch as a group: a common one is missing that a <code>Question</code>'s id is a foreign key used inside <code>answers</code>, not just inside its own <code>Survey</code>, or missing that a matrix question's answer is split across several <code>answers</code> entries keyed <code>f&quot;{question_id}_matrix_{row}&quot;</code> rather than one entry. These are exactly the kind of detail an AI can get wrong on a first pass if not asked to check the actual storage code, not just the dataclass.</p>
+<p><strong>(c) Accessing and manipulating data (8 min).</strong></p>
+<p><strong>Prompt:</strong></p>
+<blockquote>
+<p>Using only the public functions in <code>src/storage.py</code> (no Dash, no UI), write a short script that lists every survey with more than N responses, printing each response's <code>respondent_id</code> and <code>submitted_at</code>. Run it against the sample data in <code>surveys/</code> and <code>data/</code>.</p>
+</blockquote>
+<p>Students run the script against the app's real on-disk data and confirm the output matches what they see in the Survey Analyzer tab for the same survey. This is their first time touching the data layer directly instead of through the UI — it matters again in episode 4, when they write unit tests against <code>storage.py</code> without a running Dash server.</p>
+<p><strong>Deliverable:</strong> the diagram from (b), plus the working script and its output from (c).</p>
+<h2>2.7 (A1) Hands-on: the Survey Maker hover (10 min)</h2>
+<p>Spec: <code>course_materials/specifications/task_status_hovers.md</code> — Survey Maker's landing text box should show, on hover, the list of available surveys.</p>
+<ol>
+<li>In the starter <code>app.py</code>, find and uncomment the block marked <code>#A1#</code>.</li>
+<li>Set the <code>title</code> attribute on the Survey Maker tab's text box to a string listing the available surveys (one line per survey, built from <code>list_surveys()</code>).</li>
+</ol>
+<p><strong>Prompt:</strong></p>
+<blockquote>
+<p>I want to add a native browser tooltip to the element with id <code>maker-tab</code> in <code>src/app.py</code>, showing one line per survey from <code>list_surveys()</code>. Where does <code>title</code> go, and does it need to update when a survey is added, or only once at startup?</p>
+</blockquote>
+<p>This last question matters: a <code>title</code> set once at import time goes stale the moment a survey is added. Have students hover, add a survey in another tab, and hover again — if it didn't update, ask the AI why, and what <code>Input</code> would need to drive it instead. This closes the loop: the same control-flow-to-GUI understanding from 2.5 is what explains why a static string isn't enough here.</p>
+<p><strong>Deliverable:</strong> a working hover on the Survey Maker tab that reflects the current list of surveys, committed to their own fork of the repo.</p>
+<hr />
+<h2>Wrap-up check (last 5 min, informal)</h2>
+<p>Ask the room, cold: &quot;If I added a new question type tomorrow, which three files would you expect to touch, and why?&quot; A good answer references <code>models.py</code> (the <code>Question</code> dataclass), <code>form_logic.py</code> (assembling/validating it), and one of <code>survey_maker.py</code>/<code>survey_taker.py</code>/<code>survey_analyzer.py</code> (rendering it) — without needing to re-read the code to say so. That's the actual signal this episode worked.</p>
+

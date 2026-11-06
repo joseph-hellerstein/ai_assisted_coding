@@ -546,9 +546,9 @@ def toggle_type_fields(type_value):
     prevent_initial_call=True,
 )
 def save_survey_callback(n_clicks, title, description, selected_survey_id,
-                          types, type_ids, texts, requireds, options_texts,
-                          scale_mins, scale_maxs, scale_label_mins, scale_label_maxs,
-                          matrix_rows_texts, matrix_cols_texts):
+        types, type_ids, texts, requireds, options_texts,
+        scale_mins, scale_maxs, scale_label_mins, scale_label_maxs,
+        matrix_rows_texts, matrix_cols_texts):
     """Save the current survey using the live values of the rendered form fields."""
     if not title:
         return html.Span("⚠️ Please enter a survey title.", style={"color": "orange"}), no_update, no_update

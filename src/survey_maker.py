@@ -209,7 +209,7 @@ def survey_maker_layout():
             html.Div([
                 html.Label("Survey Title:"),
                 dcc.Input(
-                    id="maker-title",
+                    id=cn.L_MAKER_TITLE,
                     type="text",
                     placeholder="Enter survey title...",
                     style={"width": "100%", "padding": "8px", "marginBottom": "10px"},
