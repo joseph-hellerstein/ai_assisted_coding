@@ -64,7 +64,7 @@ app.index_string = app.index_string.replace(
     "                background-color: #2c3e50;\n"
     "                color: #ffffff;\n"
     "                border-radius: 4px;\n"
-    "                font-size: 19.5px;\n"
+    "                font-size: 15.5px;\n"
     "                font-weight: normal;\n"
     "                line-height: 1.4;\n"
     "                white-space: pre-line;\n"
@@ -879,23 +879,6 @@ def delete_draft_callback(n_clicks, survey_id, current_draft_id):
 def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id, respondent_id):
     """Save the submitted answers as a Response.
 
-    Registered once, statically, at import time (unlike the previous
-    implementation, which tried to register this callback at request time
-    inside `show_survey` — Dash never actually wires up a callback
-    registered that way, so submissions were silently dropped).
-
-    If this submission resumed a saved draft, that draft is deleted once
-    it becomes a real response, so it stops showing up as resumable. The
-    draft dropdown's *options* are deliberately left stale here (they'll
-    naturally refresh next time the survey is reselected) rather than
-    updated inline: removing the just-submitted draft from the options
-    would clear the dropdown's own *value* client-side (its selected
-    option no longer existing), which would be a genuine prop change that
-    re-triggers show_survey — rebuilding the form and wiping this very
-    "Thank you" message. The resume section's *style* is safe to update
-    directly, though: it's a different component than the dropdown and
-    isn't anyone's Input, so toggling it can't trigger that cascade.
-
     The `if not n_clicks` guard matters here specifically because this
     callback (unlike before) now also writes to components that already
     exist outside the dynamically-rendered form (the draft-id Store, the
@@ -915,6 +898,11 @@ def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id, r
     if not is_valid_respondent_id(respondent_id):
         return (
             html.Span("⚠️ Your ID must be exactly 5 digits.", style={"color": "orange"}),
+            no_update, no_update, no_update, no_update,
+        )
+    if has_duplicate_respondent_id(survey_id, respondent_id):
+        return (
+            html.Span("⚠️ This ID has already been used for this survey.", style={"color": "orange"}),
             no_update, no_update, no_update, no_update,
         )
 
@@ -1127,6 +1115,13 @@ def delete_response_row(data, data_previous, survey_id):
 
     response_count, charts = _response_count_and_charts(survey, load_responses(survey_id))
     return response_count, charts, _analyzer_tab_label()
+
+def has_duplicate_respondent_id(survey_id: str, respondent_id: str) -> bool:
+    """Whether another response to this survey already used respondent_id."""
+    responses = load_responses(survey_id)
+    #result = any(r.id == respondent_id for r in responses)
+    result = any(r.respondent_id == respondent_id for r in responses)
+    return result
 
 
 if __name__ == "__main__":

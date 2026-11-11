@@ -9,6 +9,8 @@ render one input per row, keyed by the composite qid "{question_id}::{row}".
 from models import Question, Survey  # type: ignore
 from survey_taker import _render_question_input, render_survey_taker, survey_taker_layout  # type: ignore
 
+from typing import cast
+
 
 def _collect_ids(component, out=None):
     if out is None:
@@ -114,7 +116,7 @@ def test_render_survey_taker_embeds_a_status_message_into_its_own_status_div():
     form = render_survey_taker(survey, status_message="Draft deleted.")
 
     status_div = _find_by_id(form, "taker-status")
-    assert status_div.children == "Draft deleted."
+    assert status_div.children == "Draft deleted."  # type: ignore
 
 
 def test_render_survey_taker_prefills_a_random_five_digit_respondent_id_by_default():
@@ -134,7 +136,7 @@ def test_render_survey_taker_uses_the_given_respondent_id_when_provided():
     form = render_survey_taker(survey, initial_respondent_id="54321")
 
     field = _find_by_id(form, "taker-respondent-id")
-    assert field.value == "54321"
+    assert field.value == "54321" # type: ignore
 
 
 def test_survey_taker_layout_has_a_take_another_survey_button_in_the_thank_you_screen():

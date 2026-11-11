@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import random
 from datetime import datetime
+from typing import cast
 
 from src.models import Question  # type: ignore
-
 
 def lines_to_list(text: str | None) -> list[str]:
     """Split newline-separated textarea text into a list of stripped, non-blank lines."""
@@ -198,7 +198,7 @@ def is_valid_respondent_id(value: str | None) -> bool:
     """Whether `value` is exactly 5 digits -- required before a Survey
     Taker submission is accepted, whether it's the generated default or
     something the respondent typed over it."""
-    return bool(value) and value.isdigit() and len(value) == 5
+    return bool(value) and cast(str, value).isdigit() and len(cast(str, value)) == 5
 
 
 def draft_option_label(
