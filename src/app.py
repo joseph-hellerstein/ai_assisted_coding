@@ -272,11 +272,11 @@ app.layout = html.Div([
 
 
 @callback(
-    Output(cn.L_ACTIVE_TAB_STORE, "data"),
+    Output(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
     Input(cn.L_MAKER_TAB, cn.L_N_CLICKS),
     Input(cn.L_TAKER_TAB, cn.L_N_CLICKS),
     Input(cn.L_ANALYZER_TAB, cn.L_N_CLICKS),
-    State(cn.L_ACTIVE_TAB_STORE, "data"),
+    State(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
     prevent_initial_call=True,
 )
 def toggle_active_tab(maker_clicks, taker_clicks, analyzer_clicks, current_active):
@@ -296,13 +296,13 @@ def toggle_active_tab(maker_clicks, taker_clicks, analyzer_clicks, current_activ
 
 
 @callback(
-    Output(cn.L_MAKER_TAB, "style"),
-    Output(cn.L_TAKER_TAB, "style"),
-    Output(cn.L_ANALYZER_TAB, "style"),
-    Output(cn.L_MAKER_CONTENT, "style"),
-    Output(cn.L_TAKER_CONTENT, "style"),
-    Output(cn.L_ANALYZER_CONTENT, "style"),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Output(cn.L_MAKER_TAB, cn.L_STYLE),
+    Output(cn.L_TAKER_TAB, cn.L_STYLE),
+    Output(cn.L_ANALYZER_TAB, cn.L_STYLE),
+    Output(cn.L_MAKER_CONTENT, cn.L_STYLE),
+    Output(cn.L_TAKER_CONTENT, cn.L_STYLE),
+    Output(cn.L_ANALYZER_CONTENT, cn.L_STYLE),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def render_active_tab(active_tab):
     """Reflect the active-tab Store onto the three buttons' highlighted
@@ -323,9 +323,9 @@ def render_active_tab(active_tab):
 # ===== Test-data Callbacks =====
 
 @callback(
-    Output(cn.L_TEST_PANEL, "style"),
+    Output(cn.L_TEST_PANEL, cn.L_STYLE),
     Input(cn.L_TEST_TOGGLE, cn.L_N_CLICKS),
-    State(cn.L_TEST_PANEL, "style"),
+    State(cn.L_TEST_PANEL, cn.L_STYLE),
     prevent_initial_call=True,
 )
 def toggle_test_panel(n_clicks, current_style):
@@ -412,7 +412,7 @@ def delete_all_test_data(n_clicks):
 
 @callback(
     Output(cn.L_MAKER_TAB_TOOLTIP, cn.L_CHILDREN),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_maker_tab_hover(tabs_value):
     """Keep the Survey Maker tab's hover live; see _maker_tab_label above.
@@ -425,7 +425,7 @@ def refresh_maker_tab_hover(tabs_value):
 
 @callback(
     Output(cn.L_MAKER_SURVEY_SELECT, "options"),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_survey_list(tabs_value):
     """Refresh the survey dropdown when switching tabs. No
@@ -441,7 +441,7 @@ def refresh_survey_list(tabs_value):
     Output(cn.L_MAKER_TITLE, cn.L_VALUE),
     Output(cn.L_MAKER_DESCRIPTION, cn.L_VALUE),
     Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN),
-    Output(cn.L_MAKER_EDITOR_SECTION, "style"),
+    Output(cn.L_MAKER_EDITOR_SECTION, cn.L_STYLE),
     Input(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
     Input(cn.L_MAKER_CREATE_NEW, cn.L_N_CLICKS),
     prevent_initial_call=True,
@@ -504,9 +504,9 @@ def delete_question(n_clicks_list, current_children):
 
 
 @callback(
-    Output({"type": "q-options-wrap", "qid": MATCH}, "style"),
-    Output({"type": "q-scale-wrap", "qid": MATCH}, "style"),
-    Output({"type": "q-matrix-wrap", "qid": MATCH}, "style"),
+    Output({"type": "q-options-wrap", "qid": MATCH}, cn.L_STYLE),
+    Output({"type": "q-scale-wrap", "qid": MATCH}, cn.L_STYLE),
+    Output({"type": "q-matrix-wrap", "qid": MATCH}, cn.L_STYLE),
     Input({"type": "q-type", "qid": MATCH}, cn.L_VALUE),
 )
 def toggle_type_fields(type_value):
@@ -528,7 +528,7 @@ def toggle_type_fields(type_value):
     Output(cn.L_MAKER_STATUS, cn.L_CHILDREN),
     Output(cn.L_MAKER_SURVEY_SELECT, "options", allow_duplicate=True),
     Output(cn.L_MAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
-    Input(cn.L_MAKER_SAVE_SURVEY, "n_clicks"),
+    Input(cn.L_MAKER_SAVE_SURVEY, cn.L_N_CLICKS),
     State(cn.L_MAKER_TITLE, cn.L_VALUE),
     State(cn.L_MAKER_DESCRIPTION, cn.L_VALUE),
     State(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE),
@@ -610,7 +610,7 @@ def confirm_delete_survey(n_clicks, survey_id):
     Output(cn.L_MAKER_DESCRIPTION, cn.L_VALUE, allow_duplicate=True),
     Output(cn.L_MAKER_QUESTIONS_CONTAINER, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_MAKER_SURVEY_SELECT, cn.L_VALUE, allow_duplicate=True),
-    Output(cn.L_MAKER_EDITOR_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_MAKER_EDITOR_SECTION, cn.L_STYLE, allow_duplicate=True),
     Output(cn.L_MAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_TAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_ANALYZER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
@@ -644,8 +644,8 @@ def perform_delete_survey(submit_n_clicks, survey_id):
 # ===== Survey Taker Callbacks =====
 
 @callback(
-    Output("taker-survey-select", "options"),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Output(cn.L_TAKER_SURVEY_SELECT, "options"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_taker_list(tabs_value):
     """Refresh the survey dropdown when switching tabs. No
@@ -658,7 +658,7 @@ def refresh_taker_list(tabs_value):
 
 @callback(
     Output(cn.L_TAKER_TAB_TOOLTIP, cn.L_CHILDREN),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_taker_tab_hover(tabs_value):
     """Keep the Survey Taker tab's hover live; see _taker_tab_label above.
@@ -695,8 +695,8 @@ def _draft_section_style(has_drafts: bool) -> dict:
 
 @callback(
     Output(cn.L_TAKER_DRAFT_SELECT, "options"),
-    Output(cn.L_TAKER_DRAFT_SECTION, "style"),
-    Input("taker-survey-select", cn.L_VALUE),
+    Output(cn.L_TAKER_DRAFT_SECTION, cn.L_STYLE),
+    Input(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE),
     prevent_initial_call=True,
 )
 def refresh_draft_list(survey_id):
@@ -708,11 +708,11 @@ def refresh_draft_list(survey_id):
 
 
 @callback(
-    Output("taker-survey-form", cn.L_CHILDREN),
-    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data"),
+    Output(cn.L_TAKER_SURVEY_FORM, cn.L_CHILDREN),
+    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA),
     Output(cn.L_TAKER_DRAFT_LABEL, cn.L_VALUE),
-    Output(cn.L_TAKER_DRAFT_CONTROLS, "style"),
-    Input("taker-survey-select", cn.L_VALUE),
+    Output(cn.L_TAKER_DRAFT_CONTROLS, cn.L_STYLE),
+    Input(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE),
     Input(cn.L_TAKER_DRAFT_SELECT, cn.L_VALUE),
     prevent_initial_call=True,
 )
@@ -749,13 +749,13 @@ def show_survey(survey_id, draft_id):
     Output(cn.L_TAKER_STATUS, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_TAKER_DRAFT_SELECT, "options", allow_duplicate=True),
     Output(cn.L_TAKER_DRAFT_SELECT, cn.L_VALUE, allow_duplicate=True),
-    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
-    Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA, allow_duplicate=True),
+    Output(cn.L_TAKER_DRAFT_SECTION, cn.L_STYLE, allow_duplicate=True),
     Output(cn.L_TAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
-    Input(cn.L_TAKER_SAVE_DRAFT, "n_clicks"),
-    State("taker-survey-select", cn.L_VALUE),
+    Input(cn.L_TAKER_SAVE_DRAFT, cn.L_N_CLICKS),
+    State(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE),
     State(cn.L_TAKER_DRAFT_LABEL, cn.L_VALUE),
-    State(cn.L_TAKER_CURRENT_DRAFT_STORE, "data"),
+    State(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA),
     State({"type": "answer", "qid": ALL}, cn.L_VALUE),
     State({"type": "answer", "qid": ALL}, "id"),
     State(cn.L_TAKER_RESPONDENT_ID, cn.L_VALUE),
@@ -812,20 +812,20 @@ def save_draft_callback(n_clicks, survey_id, label, current_draft_id, values, id
 
 @callback(
     Output(cn.L_TAKER_STATUS, cn.L_CHILDREN, allow_duplicate=True),
-    Output("taker-survey-form", cn.L_CHILDREN, allow_duplicate=True),
-    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
-    Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_SURVEY_FORM, cn.L_CHILDREN, allow_duplicate=True),
+    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA, allow_duplicate=True),
+    Output(cn.L_TAKER_DRAFT_SECTION, cn.L_STYLE, allow_duplicate=True),
     Output(cn.L_TAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
-    Input(cn.L_TAKER_DELETE_DRAFT, "n_clicks"),
-    State("taker-survey-select", cn.L_VALUE),
-    State(cn.L_TAKER_CURRENT_DRAFT_STORE, "data"),
+    Input(cn.L_TAKER_DELETE_DRAFT, cn.L_N_CLICKS),
+    State(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE),
+    State(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA),
     prevent_initial_call=True,
 )
 def delete_draft_callback(n_clicks, survey_id, current_draft_id):
     """Delete whichever draft is currently loaded, and reset the form to
     blank -- the deleted draft's answers shouldn't linger on screen.
 
-    Rebuilds "taker-survey-form" directly here (rather than clearing the
+    Rebuilds cn.L_TAKER_SURVEY_FORM directly here (rather than clearing the
     draft dropdown's value and letting show_survey react to that) so a
     status message survives: changing the dropdown's own options/value
     would cascade into show_survey anyway, but *as its own trigger*, which
@@ -864,46 +864,59 @@ def delete_draft_callback(n_clicks, survey_id, current_draft_id):
 
 @callback(
     Output(cn.L_TAKER_STATUS, cn.L_CHILDREN),
-    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, "data", allow_duplicate=True),
-    Output(cn.L_TAKER_DRAFT_SECTION, "style", allow_duplicate=True),
+    Output(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA, allow_duplicate=True),
+    Output(cn.L_TAKER_DRAFT_SECTION, cn.L_STYLE, allow_duplicate=True),
     Output(cn.L_TAKER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_ANALYZER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
-    Input(cn.L_TAKER_SUBMIT, "n_clicks"),
-    State("taker-survey-select", cn.L_VALUE),
+    Output(cn.L_TAKER_SURVEY_FORM, cn.L_STYLE, allow_duplicate=True),
+    Output(cn.L_TAKER_THANKYOU, cn.L_STYLE, allow_duplicate=True),
+    Input(cn.L_TAKER_SUBMIT, cn.L_N_CLICKS),
+    State(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE),
     State({"type": "answer", "qid": ALL}, cn.L_VALUE),
     State({"type": "answer", "qid": ALL}, "id"),
-    State(cn.L_TAKER_CURRENT_DRAFT_STORE, "data"),
+    State(cn.L_TAKER_CURRENT_DRAFT_STORE, cn.L_DATA),
     State(cn.L_TAKER_RESPONDENT_ID, cn.L_VALUE),
     prevent_initial_call=True,
 )
 def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id, respondent_id):
     """Save the submitted answers as a Response.
 
+    This callback also decides which screen the respondent sees: only a
+    successful save hides the form and shows the "Thank you" screen. Every
+    rejection (no survey, badly formatted ID, duplicate ID) leaves the form
+    visible so the warning written into "taker-status" -- which lives
+    *inside* the form -- can actually be seen and the ID corrected. (A
+    separate callback used to switch screens on every Submit click,
+    without knowing whether the submission was accepted, which hid every
+    warning behind the "Thank you" screen.)
+
     The `if not n_clicks` guard matters here specifically because this
-    callback (unlike before) now also writes to components that already
-    exist outside the dynamically-rendered form (the draft-id Store, the
-    resume section): Dash fires a callback like that once, spuriously, at
-    n_clicks=0 the moment its dynamically-mounted Input component (the
-    Submit button, recreated by show_survey on every survey/draft
-    selection) first appears — the existing show_thank_you callback below
-    already guards against the exact same quirk for that reason.
+    callback writes to components that already exist outside the
+    dynamically-rendered form (the draft-id Store, the resume section, the
+    form/thank-you visibility): Dash fires a callback like that once,
+    spuriously, at n_clicks=0 the moment its dynamically-mounted Input
+    component (the Submit button, recreated by show_survey on every
+    survey/draft selection) first appears.
     """
     if not n_clicks:
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
     if not survey_id:
         return (
             html.Span("⚠️ No survey selected.", style={"color": "orange"}),
             no_update, no_update, no_update, no_update,
+            no_update, no_update,
         )
     if not is_valid_respondent_id(respondent_id):
         return (
             html.Span("⚠️ Your ID must be exactly 5 digits.", style={"color": "orange"}),
             no_update, no_update, no_update, no_update,
+            no_update, no_update,
         )
     if has_duplicate_respondent_id(survey_id, respondent_id):
         return (
             html.Span("⚠️ This ID has already been used for this survey.", style={"color": "orange"}),
             no_update, no_update, no_update, no_update,
+            no_update, no_update,
         )
 
     qids = [d["qid"] for d in ids]
@@ -931,26 +944,15 @@ def submit_survey_response(n_clicks, survey_id, values, ids, current_draft_id, r
         section_style,
         _taker_tab_label(),
         _analyzer_tab_label(),
+        {"display": "none"},   # hide the form
+        {"display": "block"},  # show "Thank you"
     )
 
 
 @callback(
-    Output("taker-survey-form", "style"),
-    Output("taker-thankyou", "style"),
-    Input("taker-submit", "n_clicks"),
-    prevent_initial_call=True,
-)
-def show_thank_you(n_clicks):
-    """Hide the form and show thank you message after submission."""
-    if n_clicks == 0:
-        return {}, {}
-    return {"display": "none"}, {"display": "block"}
-
-
-@callback(
-    Output("taker-survey-select", cn.L_VALUE, allow_duplicate=True),
-    Output("taker-survey-form", "style", allow_duplicate=True),
-    Output("taker-thankyou", "style", allow_duplicate=True),
+    Output(cn.L_TAKER_SURVEY_SELECT, cn.L_VALUE, allow_duplicate=True),
+    Output(cn.L_TAKER_SURVEY_FORM, cn.L_STYLE, allow_duplicate=True),
+    Output(cn.L_TAKER_THANKYOU, cn.L_STYLE, allow_duplicate=True),
     Input(cn.L_TAKER_TAKE_ANOTHER, cn.L_N_CLICKS),
     prevent_initial_call=True,
 )
@@ -972,7 +974,7 @@ def take_another_survey(n_clicks):
 
 @callback(
     Output(cn.L_ANALYZER_TAB_TOOLTIP, cn.L_CHILDREN),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_analyzer_tab_hover(tabs_value):
     """Keep the Survey Analyzer tab's hover live; see _analyzer_tab_label
@@ -983,8 +985,8 @@ def refresh_analyzer_tab_hover(tabs_value):
 
 
 @callback(
-    Output("analyzer-survey-select", "options"),
-    Input(cn.L_ACTIVE_TAB_STORE, "data"),
+    Output(cn.L_ANALYZER_SURVEY_SELECT, "options"),
+    Input(cn.L_ACTIVE_TAB_STORE, cn.L_DATA),
 )
 def refresh_analyzer_list(tabs_value):
     """Refresh the survey dropdown when switching tabs. No
@@ -1026,12 +1028,12 @@ def _response_count_and_charts(survey, responses):
 
 
 @callback(
-    Output("analyzer-response-count", cn.L_CHILDREN),
-    Output("analyzer-charts", cn.L_CHILDREN),
-    Output("analyzer-data-table", "data"),
-    Output("analyzer-data-table", "columns"),
-    Output(cn.L_ANALYZER_TABLE_SECTION, "style"),
-    Input("analyzer-survey-select", cn.L_VALUE),
+    Output(cn.L_ANALYZER_RESPONSE_COUNT, cn.L_CHILDREN),
+    Output(cn.L_ANALYZER_CHARTS, cn.L_CHILDREN),
+    Output(cn.L_ANALYZER_DATA_TABLE, cn.L_DATA),
+    Output(cn.L_ANALYZER_DATA_TABLE, cn.L_COLUMNS),
+    Output(cn.L_ANALYZER_TABLE_SECTION, cn.L_STYLE),
+    Input(cn.L_ANALYZER_SURVEY_SELECT, cn.L_VALUE),
     prevent_initial_call=True,
 )
 def analyze_survey(survey_id):
@@ -1078,12 +1080,12 @@ def analyze_survey(survey_id):
 
 
 @callback(
-    Output("analyzer-response-count", cn.L_CHILDREN, allow_duplicate=True),
-    Output("analyzer-charts", cn.L_CHILDREN, allow_duplicate=True),
+    Output(cn.L_ANALYZER_RESPONSE_COUNT, cn.L_CHILDREN, allow_duplicate=True),
+    Output(cn.L_ANALYZER_CHARTS, cn.L_CHILDREN, allow_duplicate=True),
     Output(cn.L_ANALYZER_TAB_TOOLTIP, cn.L_CHILDREN, allow_duplicate=True),
-    Input("analyzer-data-table", "data"),
-    State("analyzer-data-table", "data_previous"),
-    State("analyzer-survey-select", cn.L_VALUE),
+    Input(cn.L_ANALYZER_DATA_TABLE, cn.L_DATA),
+    State(cn.L_ANALYZER_DATA_TABLE, cn.L_DATA_PREVIOUS),
+    State(cn.L_ANALYZER_SURVEY_SELECT, cn.L_VALUE),
     prevent_initial_call=True,
 )
 def delete_response_row(data, data_previous, survey_id):
@@ -1094,7 +1096,7 @@ def delete_response_row(data, data_previous, survey_id):
 
     Guarded to fire only for a genuine single-row deletion -- exactly one
     fewer row, and every remaining id already present before -- rather than
-    every "data" change: selecting a different survey also rewrites "data"
+    every cn.L_DATA change: selecting a different survey also rewrites cn.L_DATA
     (via analyze_survey), and without this guard would be misread as
     deleting every response that belonged to the previously-shown survey.
     """

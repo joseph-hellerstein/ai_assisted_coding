@@ -2,8 +2,9 @@
 
 By the end of this course, you will be able to:
 
-1. Use AI to understand the structure of an application such as: (a) how control flow within the application relates to GUI interactions; (b) key data structures; and (c) accessing and maniuplating application data.
-2. Conduct a code review using AI assists.
-3. Implement a small feature using AI assists.
-4. Build unit tests using AI assists.
-5. Write a large feature using AI assists.
+1. Learn basics of web programming (e.g., event-based flow of control, HTML).
+2. Use AI and VSCode to understand the structure of an unfamiliar application.
+3. Conduct a code review using AI.
+4. Implement a small feature using AI.
+5. Build unit tests using AI.
+6. Use AI specification-driven development to implement a larger feature.

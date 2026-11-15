@@ -10,7 +10,7 @@ is empty outside of a real request.
 
 import app as app_module  # type: ignore
 from typing import cast
-from models import Question, Survey  # type: ignore
+from models import Question, Response, Survey  # type: ignore
 
 
 def test_save_survey_callback_captures_live_text_typed_into_the_form():
@@ -179,7 +179,7 @@ def test_submit_survey_response_deletes_the_resumed_draft_after_saving():
     app_module.list_surveys = lambda: []
     app_module.load_responses = lambda sid: []
 
-    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+    status, current_draft_id, section_style, taker_label, analyzer_label, form_style, thankyou_style = app_module.submit_survey_response(
         1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
@@ -199,7 +199,7 @@ def test_submit_survey_response_keeps_the_section_visible_if_other_drafts_remain
     app_module.list_surveys = lambda: []
     app_module.load_responses = lambda sid: []
 
-    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+    status, current_draft_id, section_style, taker_label, analyzer_label, form_style, thankyou_style = app_module.submit_survey_response(
         1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
@@ -227,7 +227,7 @@ def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
     saved = []
     app_module.save_response = lambda response: saved.append(response)
 
-    status, current_draft_id, section_style, taker_label, analyzer_label = app_module.submit_survey_response(
+    status, current_draft_id, section_style, taker_label, analyzer_label, form_style, thankyou_style = app_module.submit_survey_response(
         0, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], "draft_1", "12345",
     )
 
@@ -237,6 +237,43 @@ def test_submit_survey_response_ignores_the_spurious_zero_click_mount_event():
     assert section_style is app_module.no_update
     assert taker_label is app_module.no_update
     assert analyzer_label is app_module.no_update
+    assert form_style is app_module.no_update
+    assert thankyou_style is app_module.no_update
+
+
+def test_submit_survey_response_rejects_a_duplicate_id_and_keeps_the_form_visible():
+    # Regression guard: the warning is written into "taker-status", which is
+    # inside the form, so a rejection must leave the form showing (no_update)
+    # rather than switching to the "Thank you" screen and hiding the warning.
+    saved = []
+    app_module.save_response = lambda response: saved.append(response)
+    app_module.load_responses = lambda sid: [
+        Response(id="resp_1", survey_id=sid, submitted_at="2026-11-11T00:00:00", respondent_id="12345")
+    ]
+
+    status, *_, form_style, thankyou_style = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None, "12345",
+    )
+
+    assert saved == []
+    assert "already been used" in str(status)
+    assert form_style is app_module.no_update
+    assert thankyou_style is app_module.no_update
+
+
+def test_submit_survey_response_shows_the_thank_you_screen_only_after_saving():
+    saved = []
+    app_module.save_response = lambda response: saved.append(response)
+    app_module.load_responses = lambda sid: []
+    app_module.list_surveys = lambda: []
+
+    status, *_, form_style, thankyou_style = app_module.submit_survey_response(
+        1, "srv_1", ["Yes"], [{"type": "answer", "qid": "q_1"}], None, "54321",
+    )
+
+    assert len(saved) == 1
+    assert form_style == {"display": "none"}
+    assert thankyou_style == {"display": "block"}
 
 
 def test_taker_tab_label_lists_drafts_for_every_survey():
