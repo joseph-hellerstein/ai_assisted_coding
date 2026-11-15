@@ -23,3 +23,7 @@ TAKER_FORM = "taker-form"
 # Survey Analyzer
 ANALYZER_SURVEY_SELECT = "analyzer-survey-select"
 ANALYZER_RESULTS = "analyzer-results"
+TAKER_RESPONDENT_ID = "taker-respondent-id"
+TAKER_SUBMIT = "taker-submit"
+TAKER_STATUS = "taker-status"
+ANSWER = "answer"  # each answer input's id is {"type": ANSWER, "qid": <question id>}
