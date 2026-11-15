@@ -9,8 +9,8 @@ from dash import ALL, Dash, Input, Output, State, callback, dcc, html, no_update
 import src.constants as cn
 from src.form_logic import assemble_questions_from_state, build_response_answers, is_valid_respondent_id
 from src.models import Response, Survey, generate_id
-from src.storage import list_surveys, load_survey, save_response, save_survey
-from src.survey_analyzer import analyzer_layout
+from src.storage import list_surveys, load_responses, load_survey, save_response, save_survey
+from src.survey_analyzer import analyzer_layout, build_results
 from src.survey_maker import maker_layout
 from src.survey_taker import render_survey_form, taker_layout
 
@@ -109,6 +109,20 @@ def submit_survey_response(n_clicks, survey_id, respondent_id, values, ids):
     )
     save_response(response)
     return html.Div("✅ Thank you! Your response has been recorded.", style=SUCCESS), True
+
+
+# 5. Survey Analyzer: show charts and a table for the chosen survey.
+@callback(
+    Output(cn.ANALYZER_RESULTS, "children"),
+    Input(cn.ANALYZER_SURVEY_SELECT, "value"),
+)
+def analyze_survey(survey_id):
+    if not survey_id:
+        return []
+    survey = load_survey(survey_id)
+    if survey is None:
+        return html.Div(SURVEY_GONE, style=WARNING)
+    return build_results(survey, load_responses(survey_id))
 
 
 if __name__ == "__main__":
