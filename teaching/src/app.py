@@ -93,8 +93,6 @@ def show_survey(survey_id):
     prevent_initial_call=True,
 )
 def submit_survey_response(n_clicks, survey_id, respondent_id, values, ids):
-    if not n_clicks:
-        return no_update, no_update
     if load_survey(survey_id) is None:
         return html.Div(SURVEY_GONE, style=WARNING), no_update
     if not is_valid_respondent_id(respondent_id):

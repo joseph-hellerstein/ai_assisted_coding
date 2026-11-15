@@ -72,9 +72,3 @@ def test_submit_for_missing_survey_saves_nothing(tmp_storage):
     status, _ = submit_survey_response(1, "srv_gone", "12345", [], [])
     assert "no longer exists" in str(status)
     assert load_responses("srv_gone") == []
-
-
-def test_submit_ignores_zero_click_mount_event(survey):
-    assert submit_survey_response(0, "srv_demo", "12345", [None, "Yes", []], _answer_ids(survey)) == (
-        no_update, no_update)
-    assert load_responses("srv_demo") == []

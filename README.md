@@ -1,5 +1,7 @@
 # AI Assisted Coding
 
+> **Students:** the course uses the smaller **teaching edition** of the app. Start with [`teaching/README.md`](teaching/README.md).
+
 This repo develops content for the short course **AI Assisted Coding**.
 
 The content consists of a sequence of episodes that describe the material presented. Episodes are markdown files in the `course_materials/episodes` folder. That folder also contains the other course materials (audience, learning objectives, course outline, etc.).
