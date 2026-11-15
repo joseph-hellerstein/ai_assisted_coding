@@ -72,3 +72,15 @@ def test_analyze_survey_end_to_end_through_storage(tmp_storage):
 def test_analyze_survey_missing_file_and_no_selection(tmp_storage):
     assert analyze_survey(None) == []
     assert "no longer exists" in str(analyze_survey("srv_gone"))
+
+
+def test_word_counts_strips_quotes_and_keeps_accented_words():
+    assert word_counts(["'Great' course", "great!", "students' don't", "café niño", "'"]) == [
+        ("great", 2), ("café", 1), ("course", 1), ("don't", 1), ("niño", 1), ("students", 1),
+    ]
+
+
+def test_text_chart_ignores_answers_that_are_not_text():
+    # e.g. a question changed from checkbox to text by editing the survey file
+    fig = question_chart(TEXT_Q, [_response(1, {"q_text": ["Red"]}), _response(2, {"q_text": "fine"})])
+    assert list(fig.data[0].x) == ["fine"]

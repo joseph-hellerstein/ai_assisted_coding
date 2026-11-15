@@ -22,23 +22,34 @@ def _write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2))
 
 
+def _read_json(path: Path) -> dict | None:
+    """A file's JSON object, or None if the file is missing or isn't valid JSON."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def save_survey(survey: Survey) -> None:
     _write_json(SURVEYS_DIR / f"{survey.id}.json", survey.to_dict())
 
 
 def load_survey(survey_id: str) -> Survey | None:
-    path = SURVEYS_DIR / f"{survey_id}.json"
-    if not path.exists():
+    data = _read_json(SURVEYS_DIR / f"{survey_id}.json")
+    try:
+        return Survey.from_dict(data) if data else None
+    except (KeyError, TypeError):  # the file is missing a required field
         return None
-    return Survey.from_dict(json.loads(path.read_text()))
 
 
 def list_surveys() -> list[dict]:
-    """Every saved survey's id and title, sorted by title."""
+    """Every saved survey's id and title, sorted by title. Unreadable files are skipped."""
     surveys = []
     for path in SURVEYS_DIR.glob("*.json"):
-        data = json.loads(path.read_text())
-        surveys.append({"id": data["id"], "title": data["title"]})
+        data = _read_json(path)
+        if data and "id" in data and "title" in data:
+            surveys.append({"id": data["id"], "title": data["title"]})
     return sorted(surveys, key=lambda s: (s["title"].lower(), s["id"]))
 
 
@@ -47,7 +58,14 @@ def save_response(response: Response) -> None:
 
 
 def load_responses(survey_id: str) -> list[Response]:
-    """Every response to a survey, oldest first."""
-    folder = RESPONSES_DIR / survey_id
-    responses = [Response.from_dict(json.loads(p.read_text())) for p in folder.glob("*.json")]
+    """Every response to a survey, oldest first. Unreadable files are skipped."""
+    responses = []
+    for path in (RESPONSES_DIR / survey_id).glob("*.json"):
+        data = _read_json(path)
+        if data is None:
+            continue
+        try:
+            responses.append(Response.from_dict(data))
+        except TypeError:  # a required field is missing
+            continue
     return sorted(responses, key=lambda r: r.submitted_at)

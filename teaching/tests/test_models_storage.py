@@ -58,3 +58,31 @@ def test_load_responses_sorted_and_empty_when_none(tmp_storage):
     assert [r.submitted_at for r in load_responses("srv_x")] == [
         "2026-01-01T00:00:00", "2026-01-02T00:00:00",
     ]
+
+
+def test_list_surveys_skips_unreadable_files(tmp_storage):
+    good = _survey("Good")
+    save_survey(good)
+    (tmp_storage / "surveys" / "half_written.json").write_text('{"id": "srv_bad", "title":')
+    (tmp_storage / "surveys" / "no_title.json").write_text('{"id": "srv_x"}')
+    assert list_surveys() == [{"id": good.id, "title": "Good"}]
+
+
+def test_load_survey_with_unreadable_file_returns_none(tmp_storage):
+    (tmp_storage / "surveys").mkdir()
+    (tmp_storage / "surveys" / "srv_bad.json").write_text("{ not json")
+    assert load_survey("srv_bad") is None
+
+
+def test_load_survey_ignores_unknown_keys_added_by_hand(tmp_storage):
+    (tmp_storage / "surveys").mkdir()
+    (tmp_storage / "surveys" / "srv_x.json").write_text(
+        '{"id": "srv_x", "title": "T", "questions": '
+        '[{"id": "q", "type": "text", "text": "Why?", "required": true}]}')
+    assert load_survey("srv_x").questions == [Question(id="q", type="text", text="Why?")]
+
+
+def test_load_responses_skips_unreadable_files(tmp_storage):
+    save_response(_response("srv_x", "2026-01-01T00:00:00"))
+    (tmp_storage / "responses" / "srv_x" / "broken.json").write_text("{")
+    assert len(load_responses("srv_x")) == 1

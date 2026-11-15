@@ -1,7 +1,9 @@
 # Survey Manager: Teaching Edition Specification
 
-**Status:** v1.1 (2026-11-14), implemented in `teaching/`. All decisions are listed in
-[Decisions](#11-decisions).
+**Status:** v1.1 (2026-11-14). The code is implemented in `teaching/` and meets
+acceptance criteria 1–5. Criterion 6 is still open: the course episodes and the
+teaching-edition data-model diagram haven't been updated yet. All decisions are listed
+in [Decisions](#11-decisions).
 
 | Version | Change |
 |---|---|

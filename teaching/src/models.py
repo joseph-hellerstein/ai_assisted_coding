@@ -2,8 +2,14 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
+
+
+def _known_fields(cls, d: dict) -> dict:
+    """Drop keys the class doesn't define, e.g. ones added by hand to a JSON file."""
+    names = {f.name for f in fields(cls)}
+    return {k: v for k, v in d.items() if k in names}
 
 
 @dataclass
@@ -18,7 +24,7 @@ class Question:
 
     @classmethod
     def from_dict(cls, d: dict) -> Question:
-        return cls(**d)
+        return cls(**_known_fields(cls, d))
 
 
 @dataclass
@@ -50,7 +56,7 @@ class Response:
 
     @classmethod
     def from_dict(cls, d: dict) -> Response:
-        return cls(**d)
+        return cls(**_known_fields(cls, d))
 
 
 def generate_id(prefix: str) -> str:

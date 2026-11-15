@@ -10,6 +10,9 @@ from dash import dash_table, dcc, html
 import src.constants as cn
 from src.models import Question, Response, Survey
 
+# A word is letters or digits, optionally joined by apostrophes ("don't"); quotes around it are dropped.
+WORD = r"[^\W_]+(?:'[^\W_]+)*"
+
 
 def analyzer_layout() -> html.Div:
     return html.Div([
@@ -21,7 +24,7 @@ def analyzer_layout() -> html.Div:
 
 def word_counts(texts: list[str], top_n: int = 15) -> list[tuple[str, int]]:
     """The most common words in some text answers, ignoring case and punctuation."""
-    counts = Counter(word for text in texts for word in re.findall(r"[a-z0-9']+", text.lower()))
+    counts = Counter(word for text in texts for word in re.findall(WORD, text.lower()))
     return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:top_n]
 
 
@@ -35,7 +38,7 @@ def question_chart(question: Question, responses: list[Response]) -> go.Figure:
         labels = question.options
         counts = [sum(option in answer for answer in answers) for option in labels]
     else:  # text
-        pairs = word_counts(answers)
+        pairs = word_counts([a for a in answers if isinstance(a, str)])
         labels = [word for word, _ in pairs]
         counts = [count for _, count in pairs]
     fig = go.Figure(go.Bar(x=labels, y=counts))
