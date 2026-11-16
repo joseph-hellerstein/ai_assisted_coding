@@ -7,12 +7,12 @@ from datetime import datetime
 from dash import ALL, Dash, Input, Output, State, callback, dcc, html, no_update
 
 import src.constants as cn
-from src.form_logic import assemble_questions_from_state, build_response_answers, is_valid_respondent_id
-from src.models import Response, Survey, generate_id
-from src.storage import list_surveys, load_responses, load_survey, save_response, save_survey
-from src.survey_analyzer import analyzer_layout, build_results
-from src.survey_maker import maker_layout
-from src.survey_taker import render_survey_form, taker_layout
+from src.form_logic import assemble_questions_from_state, build_response_answers, is_valid_respondent_id  # type: ignore
+from src.models import Response, Survey, generate_id  # type: ignore
+from src.storage import list_surveys, load_responses, load_survey, save_response, save_survey  # type: ignore
+from src.survey_analyzer import analyzer_layout, build_results  # type: ignore
+from src.survey_maker import maker_layout  # type: ignore
+from src.survey_taker import render_survey_form, taker_layout  # type: ignore
 
 WARNING = {"color": "darkorange"}
 SUCCESS = {"color": "green"}
